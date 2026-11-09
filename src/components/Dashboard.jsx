@@ -55,7 +55,7 @@ function Spark({ aq }) {
       <text x={P} y="16" className="spark-t mut">−24h · modelled</text>
       <text x={W - P} y="16" textAnchor="end" className="spark-t mut">+24h · forecast</text>
       <circle cx={x(peak.t)} cy={y(peak.us_aqi)} r="4" fill={category(peak.us_aqi).color} />
-      <text x={Math.min(W - 60, x(peak.t) + 6)} y={y(peak.us_aqi) - 8} className="spark-t">peak {peak.us_aqi}</text>
+      <text x={Math.min(W - 70, x(peak.t) + 6)} y={y(peak.us_aqi) < 34 ? y(peak.us_aqi) + 18 : y(peak.us_aqi) - 8} textAnchor={x(peak.t) > W - 80 ? 'end' : 'start'} className="spark-t">peak {peak.us_aqi}</text>
     </svg>
   )
 }
