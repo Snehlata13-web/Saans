@@ -1,4 +1,4 @@
-import { avg, category, cigarettes, computeNAQI, POLLUTANTS, round, fmtTime } from './aqi'
+import { avg, category, cigarettes, computeNAQI, POLLUTANTS, round, fmtTime, fmtHour } from './aqi'
 import { bestWindow, pctChange } from './analytics'
 
 export function last24(aq) {
@@ -26,7 +26,7 @@ export function summary(aq) {
   }
 }
 
-const hm = (t, tz) => new Date(t).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', timeZone: tz })
+const hm = (t, tz) => fmtHour(t, tz)
 
 // Plain-language "AI insights" generated from the live numbers (deterministic, no hallucination)
 export function insights(aq, wx, place) {

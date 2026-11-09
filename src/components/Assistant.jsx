@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Card, Tag } from './ui'
-import { category, round, POLLUTANTS } from '../lib/aqi'
+import { category, round, POLLUTANTS, fmtHour } from '../lib/aqi'
 import { insights, contextFor } from '../lib/insights'
 
 const SUGGEST = ['Is it safe to go for a run now?', 'Should my kids play outside?', 'When is the best time to go out today?', 'What is PM2.5?', 'Will air get worse tomorrow?', 'Kya mujhe mask pehenna chahiye?']
@@ -10,7 +10,7 @@ function localAnswer(q, { aq, wx, loc }) {
   const c = aq.current || {}
   const cat = category(c.us_aqi)
   const { s } = insights(aq, wx, loc.name)
-  const tf = (x) => new Date(x).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', timeZone: aq.tz })
+  const tf = (x) => fmtHour(x, aq.tz)
   const head = `${loc.name}: US AQI ${c.us_aqi ?? '—'} (${cat.label}, model estimate).`
   if (/run|jog|exercise|walk|gym|cycle|sport|workout|daud|sair/.test(t))
     return `${head} ${cat.activity}${s.best ? ` The cleanest 2-hour window in the next 48h is around ${tf(s.best.start)} (forecast AQI ≈ ${round(s.best.aqi)}).` : ''}`
@@ -62,7 +62,9 @@ export default function Assistant({ aq, wx, station, loc }) {
     try {
       const r = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: next.slice(1), context: contextFor(aq, wx, station, loc) }) })
       if (!r.ok) throw new Error(r.status)
-      answer = (await r.json()).text
+      const j = await r.json()
+      if (!j.text) throw new Error(j.error || 'no text')
+      answer = j.text
       setMode('LLM')
     } catch {
       answer = localAnswer(text, { aq, wx, loc })

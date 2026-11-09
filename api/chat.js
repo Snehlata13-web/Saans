@@ -8,7 +8,7 @@ Give health guidance based on US EPA AQI categories and WHO guidelines. You are 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
   const groq = process.env.GROQ_API_KEY, openai = process.env.OPENAI_API_KEY
-  if (!groq && !openai) return res.status(503).json({ error: 'No AI key configured' })
+  if (!groq && !openai) return res.status(200).json({ error: 'No AI key configured' })
 
   let body = req.body
   if (typeof body === 'string') { try { body = JSON.parse(body) } catch { body = {} } }

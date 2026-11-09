@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Card, Gauge, Tag, AqiChip } from './ui'
-import { category, POLLUTANTS, round, fmtTime, haversine } from '../lib/aqi'
+import { category, POLLUTANTS, round, fmtTime, fmtHour, haversine } from '../lib/aqi'
 import { insights } from '../lib/insights'
 
 const BreathOrb = lazy(() => import('./BreathOrb'))
@@ -101,8 +101,7 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go }) {
       <Card title="Best time to step out" icon="🏃" right={<Tag kind="forecast" />}>
         {s.best ? (
           <div className="best">
-            <div className="best-t">{new Date(s.best.start).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: aq.tz })}
-              {' – '}{new Date(s.best.end).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZone: aq.tz })}</div>
+            <div className="best-t">{fmtHour(s.best.start, aq.tz)} – {new Date(s.best.end).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: aq.tz })}</div>
             <div>Forecast AQI ≈ <AqiChip v={round(s.best.aqi)} /> · {category(s.best.aqi).activity}</div>
           </div>
         ) : <div className="muted">Forecast not available.</div>}

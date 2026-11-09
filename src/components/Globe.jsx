@@ -60,7 +60,7 @@ function Pillar({ p, onSelect, selected }) {
         onPointerOver={(e) => { e.stopPropagation(); setHover(true); document.body.style.cursor = 'pointer' }}
         onPointerOut={() => { setHover(false); document.body.style.cursor = '' }}
         onClick={(e) => { e.stopPropagation(); onSelect?.(p) }}>
-        <cylinderGeometry args={[0.018, 0.028, h, 10]} />
+        <cylinderGeometry args={[0.011, 0.02, h, 10]} />
         <meshStandardMaterial color={cat.color} emissive={cat.color} emissiveIntensity={1.4} toneMapped={false} transparent opacity={0.92} />
       </mesh>
       {hot && (
@@ -97,7 +97,7 @@ function CameraFocus({ target }) {
   return null
 }
 
-export default function Globe({ points = [], onSelect, selected, height = 520, autoRotate = true }) {
+export default function Globe({ points = [], onSelect, selected, focus, height = 520, autoRotate = true }) {
   return (
     <div className="globe-wrap" style={{ height }}>
       <Canvas camera={{ position: [0, 1.5, 5.8], fov: 45 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>
@@ -111,7 +111,7 @@ export default function Globe({ points = [], onSelect, selected, height = 520, a
             <Pillar key={p.name + p.lat} p={p} onSelect={onSelect} selected={selected && selected.name === p.name} />
           ))}
         </Suspense>
-        <CameraFocus target={selected} />
+        <CameraFocus target={selected || focus} />
         <OrbitControls enablePan={false} minDistance={2.8} maxDistance={10} autoRotate={autoRotate} autoRotateSpeed={0.45} enableDamping />
       </Canvas>
     </div>

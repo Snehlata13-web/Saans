@@ -58,6 +58,12 @@ export default function App() {
   const go = (t) => { setTab(t); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   useEffect(() => { history.replaceState(null, '', `?lat=${loc.lat.toFixed(4)}&lon=${loc.lon.toFixed(4)}&name=${encodeURIComponent(loc.name)}&country=${encodeURIComponent(loc.country || '')}#${tab}`) }, [loc, tab])
 
+  useEffect(() => {
+    const h = () => { const t = location.hash.slice(1); if (TABS.some(([k]) => k === t)) setTab(t) }
+    window.addEventListener('hashchange', h)
+    return () => window.removeEventListener('hashchange', h)
+  }, [])
+
   // main location data
   useEffect(() => {
     let off = false

@@ -109,6 +109,8 @@ export function fmtTime(iso, tz) {
   return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short', ...(tz ? { timeZone: tz } : {}) })
 }
 
+export const fmtHour = (t, tz) => new Date(t).toLocaleString('en-IN', { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz || undefined })
+
 export function haversine(a, b) {
   const R = 6371, toR = (x) => (x * Math.PI) / 180
   const dLat = toR(b.lat - a.lat), dLon = toR(b.lon - a.lon)

@@ -16,7 +16,7 @@ export default function World({ world, worldErr, loc, aq, onPick }) {
       <Card className="span2 globe-card" title="Live 3D pollution globe" icon="🌍" right={<Tag kind="model">Pillar height = AQI · rings = hotspots</Tag>}>
         <ErrorBox error={worldErr} />
         <Suspense fallback={<Loader text="Spinning up the globe…" />}>
-          <Globe points={world} height={560} selected={sel} onSelect={(p) => setSel(p)} />
+          <Globe points={world} height={560} selected={sel} focus={loc} onSelect={(p) => setSel(p)} autoRotate={!sel} />
         </Suspense>
         {sel && (
           <div className="globe-sel" style={{ '--c': category(sel.us_aqi).color }}>
