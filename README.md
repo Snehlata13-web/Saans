@@ -60,6 +60,8 @@ Plus: live city ticker, shareable URLs (`?lat=&lon=&name=`), auto-refresh every 
 | [Groq](https://console.groq.com) / OpenAI | optional LLM for the assistant | — | `GROQ_API_KEY` (server-side) |
 
 ### Data honesty
+- **AQI is computed by SAANS using the official US EPA method** (NowCast 12h for PM2.5/PM10, 1h NO₂/SO₂, 8h CO) from the modelled concentrations. Open-Meteo's raw `us_aqi` was not used for the headline because it is driven by CAMS ozone, which is strongly over-estimated over South Asia (e.g. Mumbai raw 222 vs. 159 measured), and it is not capped at 500. Validation on 9 Nov 2026 against IQAir station data: Delhi 192 vs 196, Mumbai 160 vs 159.
+- Nearby ground stations (WAQI, ≤25 km) are shown next to the model, and become the headline value when they reported within the last 2 hours.
 - Every number is labelled as **Ground-station measurement**, **Model estimate · CAMS**, **Historical (modelled)**, **Forecast**, or **ML prediction · experimental**.
 - No hard-coded or fabricated AQI values. If an API fails, SAANS shows the last good response clearly marked **"Cached — live fetch failed"** with its timestamp.
 - Failures, timeouts and `429` rate limits are retried with exponential back-off; responses are cached (memory + localStorage) to stay within free-tier limits.

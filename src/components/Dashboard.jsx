@@ -1,6 +1,6 @@
 import { lazy, Suspense, useMemo } from 'react'
 import { Card, Tag, AqiChip, CountUp, Ring } from './ui'
-import { category, POLLUTANTS, round, fmtTime, fmtHour, haversine } from '../lib/aqi'
+import { category, POLLUTANTS, round, fmtTime, fmtHour, haversine, polLabel } from '../lib/aqi'
 import { insights } from '../lib/insights'
 
 const BreathOrb = lazy(() => import('./BreathOrb'))
@@ -47,10 +47,13 @@ function Spark({ aq }) {
 
 export default function Dashboard({ loc, aq, wx, station, onShare, go }) {
   const c = aq.current || {}
-  const cat = category(c.us_aqi)
   const { lines, s } = insights(aq, wx, loc.name)
   const st = station && !station.error && station.aqi != null ? station : null
   const dist = st?.geo ? haversine({ lat: loc.lat, lon: loc.lon }, { lat: st.geo[0], lon: st.geo[1] }) : null
+  const ageH = st?.time ? (Date.now() - new Date(st.time).getTime()) / 3600e3 : null
+  const useSt = st && dist != null && dist <= 25 && ageH != null && ageH < 2
+  const headline = useSt ? st.aqi : c.us_aqi
+  const cat = category(headline)
   const orbit = POLLUTANTS.filter((p) => c[p.key] != null).map((p) => {
     const x = c[p.key] / p.who
     return { label: p.label, value: round(c[p.key], p.key === 'carbon_monoxide' ? 0 : 1), color: x <= 1 ? '#2ee59d' : x <= 2 ? '#ffd43b' : x <= 4 ? '#ff922b' : '#ff4d6d' }
@@ -63,18 +66,20 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go }) {
           <div className="kicker"><i />LIVE AIR · {loc.country || 'Earth'} · {fmtTime(c.t, aq.tz)}</div>
           <h1 className="mega" data-text={loc.name}>{loc.name}</h1>
           <div className="aqi-row">
-            <div className="aqi-mega" style={{ '--c': cat.color }}><CountUp value={c.us_aqi} /></div>
+            <div className="aqi-mega" style={{ '--c': cat.color }}><CountUp value={headline} /></div>
             <div className="aqi-side">
-              <span className="aqi-unit">US AQI</span>
+              <span className="aqi-unit">US AQI · {useSt ? 'MEASURED' : 'MODEL ESTIMATE'}</span>
               <span className="cat-pill" style={{ '--c': cat.color }}>{cat.emoji} {cat.label}</span>
               <div className="tags">
-                <Tag kind={aq.stale ? 'stale' : 'model'} />
-                {st && <Tag kind="measured">Station {st.aqi}</Tag>}
+                {useSt ? <Tag kind="measured">Ground station · {round(dist, 1)} km</Tag> : <Tag kind={aq.stale ? 'stale' : 'model'} />}
+                {useSt ? <Tag kind="model">Model {c.us_aqi ?? '—'}</Tag> : st && <Tag kind="measured">Nearest station {st.aqi} · {round(dist)} km</Tag>}
               </div>
+              <span className="xs muted">Main pollutant: <b>{polLabel(useSt ? (st.dominant === 'pm25' ? 'pm2_5' : st.dominant) : c.dominant)}</b></span>
             </div>
           </div>
           <p className="lede">{cat.meaning} <span>{cat.general}</span></p>
-          {c.us_aqi > 500 && <p className="warn sm">⚠️ Beyond the top of the AQI scale (&gt;500) — extreme event such as a dust storm (PM10 {round(c.pm10)} µg/m³).</p>}
+          {useSt && <p className="xs muted">Live reading from <b>{st.station}</b> ({fmtTime(st.time)}). CAMS model estimate for this spot: {c.us_aqi ?? '—'}.</p>}
+          {c.us_aqi >= 500 && !useSt && <p className="warn sm">⚠️ Model shows an extreme event at the top of the AQI scale (e.g. a modelled dust storm, PM10 {round(c.pm10)} µg/m³). Dust models can over-estimate — check a nearby ground station.</p>}
           <div className="facts">
             <div><b><CountUp value={s.cig} decimals={1} /></b><span>cigarettes / day<br />equivalent 🚬</span></div>
             <div><b><CountUp value={s.whoX} decimals={1} />×</b><span>WHO PM2.5<br />daily limit</span></div>
@@ -160,6 +165,7 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go }) {
             <span>☀️ UV <b>{round(c.uv_index, 1) ?? '—'}</b></span>
             {aq.stale && <span className="warn">Cached data from {fmtTime(aq.cachedAt)}</span>}
           </div>
+          <p className="muted xs">How SAANS computes AQI: US EPA method from modelled concentrations — NowCast (12h) for PM2.5/PM10, 1h NO₂/SO₂, 8h CO. CAMS ozone (8h sub-index: {c.o3_aqi ?? '—'}) is shown separately and not used in the headline because the model strongly over-estimates ozone over South Asia (Open-Meteo's raw index here: {c.us_aqi_cams ?? '—'}). Ground-station readings (WAQI) take priority when a station within 25 km reported in the last 2 hours.</p>
           <p className="muted xs">*India NAQI computed by SAANS from 24h-average modelled concentrations using CPCB breakpoints — an estimate, not an official CPCB reading.</p>
         </Card>
       </div>

@@ -31,7 +31,7 @@ export default function World({ world, worldErr, loc, aq, onPick }) {
           {ranked.map((p, i) => (
             <li key={p.name} onClick={() => setSel(p)} className={sel?.name === p.name ? 'on' : ''}>
               <span className="rk">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</span>
-              <span className="nm">{p.name}<small>{p.country}</small></span>
+              <span className="nm">{p.name}<small>{p.country}{p.dominant === 'pm10' && p.us_aqi >= 300 && ' · ⚠ modelled dust'}</small></span>
               <span className="lbbar"><i style={{ width: Math.min(100, p.us_aqi / 3) + '%', background: category(p.us_aqi).color }} /></span>
               <AqiChip v={p.us_aqi} />
             </li>

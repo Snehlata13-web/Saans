@@ -4,6 +4,8 @@
 //  - BigDataCloud reverse geocoding (client endpoint) — no key
 //  - WAQI / aqicn.org ground-station measurements — via our serverless proxy (token kept server-side)
 
+import { withEpaAqi, epaFromCurrent } from './aqi'
+
 const AQ = 'https://air-quality-api.open-meteo.com/v1/air-quality'
 const WX = 'https://api.open-meteo.com/v1/forecast'
 const GEO = 'https://geocoding-api.open-meteo.com/v1/search'
@@ -111,14 +113,22 @@ export async function getAirQuality(lat, lon, { pastDays = 7, forecastDays = 5 }
     past_days: pastDays, forecast_days: forecastDays, timezone: 'auto', timeformat: 'unixtime', domains: 'auto',
   })}`)
   const now = Date.now()
-  const hourly = toRows(d.hourly)
+  const hourly = withEpaAqi(toRows(d.hourly))
+  let current = null
+  if (d.current) {
+    const ct = d.current.time * 1000
+    const upto = toRows(d.hourly).filter((r) => r.t <= ct)
+    const snap = { ...d.current, t: ct }
+    const calc = withEpaAqi([...upto.slice(-12, -1), snap]).pop()
+    current = { ...snap, ...calc, t: ct }
+  }
   return {
     source: 'Open-Meteo Air Quality API (Copernicus CAMS model)',
     kind: 'model',
     tz: d.timezone,
     offsetH: (d.utc_offset_seconds || 0) / 3600,
     lat: d.latitude, lon: d.longitude,
-    current: d.current ? { ...d.current, t: d.current.time * 1000 } : null,
+    current,
     past: hourly.filter((r) => r.t <= now),
     forecast: hourly.filter((r) => r.t > now),
     units: d.hourly_units,
@@ -126,24 +136,29 @@ export async function getAirQuality(lat, lon, { pastDays = 7, forecastDays = 5 }
   }
 }
 
-export async function getHistory(lat, lon, start, end, vars = ['us_aqi', 'pm2_5', 'pm10']) {
+export async function getHistory(lat, lon, start, end, vars = ['pm2_5', 'pm10', 'nitrogen_dioxide', 'sulphur_dioxide', 'carbon_monoxide', 'ozone']) {
   const d = await getJSON(`${AQ}?${qs({
     latitude: lat.toFixed(4), longitude: lon.toFixed(4), hourly: vars.join(','), start_date: start, end_date: end, timezone: 'auto', timeformat: 'unixtime',
   })}`, { ttl: 6 * 3600e3 })
-  return { rows: toRows(d.hourly), tz: d.timezone, stale: !!d.__stale }
+  const rows = toRows(d.hourly)
+  return { rows: vars.includes('pm10') ? withEpaAqi(rows) : rows, tz: d.timezone, stale: !!d.__stale }
 }
 
 // Many coordinates in a single request (Open-Meteo supports comma-separated lists)
-export async function getMulti(points, vars = ['us_aqi', 'pm2_5', 'pm10']) {
+export async function getMulti(points, vars = ['pm2_5', 'pm10', 'nitrogen_dioxide', 'sulphur_dioxide', 'carbon_monoxide']) {
+  const need = [...new Set([...vars.filter((v) => v !== 'us_aqi'), 'pm2_5', 'pm10', 'nitrogen_dioxide', 'sulphur_dioxide', 'carbon_monoxide'])]
   const out = []
   for (let i = 0; i < points.length; i += 60) {
     const chunk = points.slice(i, i + 60)
     const d = await getJSON(`${AQ}?${qs({
       latitude: chunk.map((p) => p.lat.toFixed(3)).join(','), longitude: chunk.map((p) => p.lon.toFixed(3)).join(','),
-      current: vars.join(','), timeformat: 'unixtime',
+      current: need.join(','), timeformat: 'unixtime',
     })}`, { ttl: 15 * 60e3 })
     const arr = Array.isArray(d) ? d : [d]
-    arr.forEach((r, j) => out.push({ ...chunk[j], ...(r.current || {}), t: (r.current?.time || 0) * 1000 }))
+    arr.forEach((r, j) => {
+      const c = r.current || {}
+      out.push({ ...chunk[j], ...c, ...epaFromCurrent(c), t: (c.time || 0) * 1000 })
+    })
   }
   return out
 }

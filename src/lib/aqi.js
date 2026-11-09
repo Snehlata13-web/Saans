@@ -59,6 +59,72 @@ export function pm25ToUsAqi(c) {
   return Math.round(((ih - il) / (ch - cl)) * (c - cl) + il)
 }
 
+// ---------- EPA AQI computed by SAANS from concentrations ----------
+// Open-Meteo's own `us_aqi` is driven by CAMS ozone (strongly over-estimated over South Asia) and is not capped,
+// so SAANS computes the headline index itself using the US EPA method (NowCast for particles).
+const EPA = {
+  pm2_5: [[0, 9, 0, 50], [9.1, 35.4, 51, 100], [35.5, 55.4, 101, 150], [55.5, 125.4, 151, 200], [125.5, 225.4, 201, 300], [225.5, 325.4, 301, 500]],
+  pm10: [[0, 54, 0, 50], [55, 154, 51, 100], [155, 254, 101, 150], [255, 354, 151, 200], [355, 424, 201, 300], [425, 604, 301, 500]],
+  o3: [[0, 54, 0, 50], [55, 70, 51, 100], [71, 85, 101, 150], [86, 105, 151, 200], [106, 200, 201, 300]], // ppb, 8h
+  no2: [[0, 53, 0, 50], [54, 100, 51, 100], [101, 360, 101, 150], [361, 649, 151, 200], [650, 1249, 201, 300], [1250, 2049, 301, 500]], // ppb, 1h
+  so2: [[0, 35, 0, 50], [36, 75, 51, 100], [76, 185, 101, 150], [186, 304, 151, 200], [305, 604, 201, 300], [605, 1004, 301, 500]], // ppb, 1h
+  co: [[0, 4.4, 0, 50], [4.5, 9.4, 51, 100], [9.5, 12.4, 101, 150], [12.5, 15.4, 151, 200], [15.5, 30.4, 201, 300], [30.5, 50.4, 301, 500]], // ppm, 8h
+}
+export function epaIndex(k, c) {
+  if (c == null || Number.isNaN(c) || c < 0) return null
+  const bp = EPA[k]
+  for (let i = 0; i < bp.length; i++) {
+    const [lo, hi, il, ih] = bp[i]
+    const next = bp[i + 1]
+    if (c <= hi || (next && c < next[0])) return Math.round(((ih - il) / (hi - lo)) * (Math.min(c, hi) - lo) + il)
+  }
+  return 500
+}
+// EPA NowCast (12h weighted average) — values ordered oldest → newest
+export function nowcast(vals) {
+  const v = vals.slice(-12).reverse()
+  if (v.slice(0, 3).filter((x) => x != null).length < 2) return v[0] ?? null
+  const ok = v.filter((x) => x != null)
+  const mx = Math.max(...ok), mn = Math.min(...ok)
+  const w = mx > 0 ? Math.max(mn / mx, 0.5) : 1
+  let num = 0, den = 0
+  v.forEach((x, i) => { if (x != null) { num += x * w ** i; den += w ** i } })
+  return den ? num / den : null
+}
+const mean = (a) => { const v = a.filter((x) => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null }
+
+// rows: hourly rows (oldest → newest) with µg/m³ concentrations. Adds us_aqi (SAANS EPA), dominant, o3_aqi.
+export function withEpaAqi(rows) {
+  return rows.map((r, i) => {
+    const win = rows.slice(Math.max(0, i - 11), i + 1)
+    const w8 = win.slice(-8)
+    const subs = {
+      pm2_5: epaIndex('pm2_5', nowcast(win.map((x) => x.pm2_5))),
+      pm10: epaIndex('pm10', nowcast(win.map((x) => x.pm10))),
+      nitrogen_dioxide: epaIndex('no2', r.nitrogen_dioxide != null ? r.nitrogen_dioxide / 1.88 : null),
+      sulphur_dioxide: epaIndex('so2', r.sulphur_dioxide != null ? r.sulphur_dioxide / 2.62 : null),
+      carbon_monoxide: epaIndex('co', mean(w8.map((x) => x.carbon_monoxide)) != null ? mean(w8.map((x) => x.carbon_monoxide)) / 1145 : null),
+    }
+    const o3 = mean(w8.map((x) => x.ozone))
+    return { ...r, ...aqiFromSubs(subs), o3_aqi: o3 != null ? epaIndex('o3', o3 / 1.96) : null, us_aqi_cams: r.us_aqi }
+  })
+}
+// Single snapshot (no history available) — instantaneous concentrations
+export function epaFromCurrent(c) {
+  return aqiFromSubs({
+    pm2_5: epaIndex('pm2_5', c.pm2_5), pm10: epaIndex('pm10', c.pm10),
+    nitrogen_dioxide: epaIndex('no2', c.nitrogen_dioxide != null ? c.nitrogen_dioxide / 1.88 : null),
+    sulphur_dioxide: epaIndex('so2', c.sulphur_dioxide != null ? c.sulphur_dioxide / 2.62 : null),
+    carbon_monoxide: epaIndex('co', c.carbon_monoxide != null ? c.carbon_monoxide / 1145 : null),
+  })
+}
+function aqiFromSubs(subs) {
+  const ks = Object.keys(subs).filter((k) => subs[k] != null)
+  if (!ks.length) return { us_aqi: null, dominant: null }
+  const dom = ks.reduce((a, b) => (subs[a] >= subs[b] ? a : b))
+  return { us_aqi: subs[dom], dominant: dom, subs }
+}
+
 // India CPCB National AQI sub-index breakpoints
 const NAQI_BP = {
   pm2_5: [0, 30, 60, 90, 120, 250, 380],
