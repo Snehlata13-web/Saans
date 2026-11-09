@@ -1,6 +1,7 @@
-import { lazy, Suspense, useMemo } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { getStationsInBounds } from '../lib/api'
 import { Card, Tag, AqiChip, CountUp, Ring } from './ui'
-import { category, POLLUTANTS, round, fmtTime, fmtHour, haversine, polLabel } from '../lib/aqi'
+import { category, naqiCategory, naqiNow, POLLUTANTS, round, fmtTime, fmtHour, haversine, polLabel } from '../lib/aqi'
 import { insights } from '../lib/insights'
 
 const BreathOrb = lazy(() => import('./BreathOrb'))
@@ -45,15 +46,33 @@ function Spark({ aq }) {
   )
 }
 
-export default function Dashboard({ loc, aq, wx, station, onShare, go }) {
+export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = 'US', onScale }) {
   const c = aq.current || {}
   const { lines, s } = insights(aq, wx, loc.name)
   const st = station && !station.error && station.aqi != null ? station : null
-  const dist = st?.geo ? haversine({ lat: loc.lat, lon: loc.lon }, { lat: st.geo[0], lon: st.geo[1] }) : null
-  const ageH = st?.time ? (Date.now() - new Date(st.time).getTime()) / 3600e3 : null
-  const useSt = st && dist != null && dist <= 25 && ageH != null && ageH < 2
-  const headline = useSt ? st.aqi : c.us_aqi
-  const cat = category(headline)
+  const [net, setNet] = useState(null)
+  useEffect(() => {
+    let off = false
+    setNet(null)
+    getStationsInBounds([loc.lat - 0.25, loc.lon - 0.3, loc.lat + 0.25, loc.lon + 0.3])
+      .then((r) => {
+        if (off) return
+        const fresh = (r.stations || []).map((x) => ({ ...x, dist: haversine({ lat: loc.lat, lon: loc.lon }, x), ageH: x.time ? (Date.now() - new Date(x.time).getTime()) / 3600e3 : 99 }))
+          .filter((x) => x.dist <= 25 && x.ageH < 3).sort((a, b) => a.aqi - b.aqi)
+        setNet(fresh)
+      }).catch(() => !off && setNet([]))
+    return () => { off = true }
+  }, [loc.lat, loc.lon])
+  const med = net?.length ? net[Math.floor(net.length / 2)].aqi : null
+  const hot = net?.length ? net[net.length - 1] : null
+  const IN = scale === 'IN'
+  // Stations (WAQI) publish the US-EPA index only, so they drive the headline on the US scale.
+  // On the India scale SAANS applies CPCB breakpoints to the latest concentrations.
+  const useSt = med != null && !IN
+  const modelVal = IN ? naqiNow(c)?.value : c.us_aqi
+  const headline = useSt ? med : modelVal
+  const cat = IN ? naqiCategory(headline) : category(headline)
+  const scaleName = IN ? 'India NAQI (CPCB)' : 'US AQI (EPA)'
   const orbit = POLLUTANTS.filter((p) => c[p.key] != null).map((p) => {
     const x = c[p.key] / p.who
     return { label: p.label, value: round(c[p.key], p.key === 'carbon_monoxide' ? 0 : 1), color: x <= 1 ? '#2ee59d' : x <= 2 ? '#ffd43b' : x <= 4 ? '#ff922b' : '#ff4d6d' }
@@ -68,22 +87,23 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go }) {
           <div className="aqi-row">
             <div className="aqi-mega" style={{ '--c': cat.color }}><CountUp value={headline} /></div>
             <div className="aqi-side">
-              <span className="aqi-unit">US AQI · {useSt ? 'MEASURED' : 'MODEL ESTIMATE'}</span>
+              <span className="aqi-unit">{scaleName} · {useSt ? 'MEASURED' : 'MODEL ESTIMATE'}</span>
               <span className="cat-pill" style={{ '--c': cat.color }}>{cat.emoji} {cat.label}</span>
               <div className="tags">
-                {useSt ? <Tag kind="measured">Ground station · {round(dist, 1)} km</Tag> : <Tag kind={aq.stale ? 'stale' : 'model'} />}
-                {useSt ? <Tag kind="model">Model {c.us_aqi ?? '—'}</Tag> : st && <Tag kind="measured">Nearest station {st.aqi} · {round(dist)} km</Tag>}
+                {useSt ? <Tag kind="measured">Median of {net.length} station{net.length > 1 ? 's' : ''} ≤25 km</Tag> : <Tag kind={aq.stale ? 'stale' : 'model'}>{IN ? 'CPCB scale · from CAMS concentrations' : undefined}</Tag>}
+                {useSt ? <Tag kind="model">Model {modelVal ?? '—'}</Tag> : med != null && <Tag kind="measured">Stations median US AQI {med}</Tag>}
               </div>
-              <span className="xs muted">Main pollutant: <b>{polLabel(useSt ? (st.dominant === 'pm25' ? 'pm2_5' : st.dominant) : c.dominant)}</b></span>
+              <span className="xs muted">Main pollutant: <b>{polLabel(c.dominant)}</b> · <button className="linkbtn" onClick={onScale}>switch to {IN ? 'US AQI' : 'India NAQI'}</button></span>
             </div>
           </div>
           <p className="lede">{cat.meaning} <span>{cat.general}</span></p>
-          {useSt && <p className="xs muted">Live reading from <b>{st.station}</b> ({fmtTime(st.time)}). CAMS model estimate for this spot: {c.us_aqi ?? '—'}.</p>}
-          {c.us_aqi >= 500 && !useSt && <p className="warn sm">⚠️ Model shows an extreme event at the top of the AQI scale (e.g. a modelled dust storm, PM10 {round(c.pm10)} µg/m³). Dust models can over-estimate — check a nearby ground station.</p>}
+          {hot && net.length > 1 && <p className="sm hotspot">🔥 Hotspot right now: <b>{hot.name?.split(',')[0]}</b> — US AQI {hot.aqi} <span className="muted xs">(measured {fmtTime(hot.time)})</span></p>}
+          {!useSt && !IN && net && <p className="xs muted">No ground station within 25 km reported in the last 3 hours — showing the Copernicus CAMS model estimate, which can under-estimate local hotspots.</p>}
+          {c.us_aqi >= 500 && !useSt && <p className="warn sm">⚠️ Model shows an extreme event at the top of the AQI scale (e.g. a modelled dust storm, PM10 {round(c.pm10)} µg/m³). Dust models can over-estimate.</p>}
           <div className="facts">
             <div><b><CountUp value={s.cig} decimals={1} /></b><span>cigarettes / day<br />equivalent 🚬</span></div>
             <div><b><CountUp value={s.whoX} decimals={1} />×</b><span>WHO PM2.5<br />daily limit</span></div>
-            <div><b style={{ color: s.naqi?.category.color }}>{s.naqi?.value ?? '—'}</b><span>India NAQI*<br />{s.naqi?.category.label}</span></div>
+            <div><b style={{ color: s.naqi?.category.color }}>{s.naqi?.value ?? '—'}</b><span>NAQI 24h avg*<br />{s.naqi?.category.label}</span></div>
           </div>
           <div className="cta">
             <button className="btn glow" onClick={onShare}>📸 Create share card</button>
@@ -138,23 +158,27 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go }) {
           <ul className="insights">{lines.map((l, i) => <li key={i} style={{ animationDelay: i * 90 + 'ms' }}>{l}</li>)}</ul>
         </Card>
 
-        <Card className="b-tall" title="Ground station" icon="📡" right={<Tag kind="measured">Measured</Tag>}>
-          {st ? (
-            <div className="station">
-              <div className="st-big" style={{ color: category(st.aqi).color }}>{st.aqi}</div>
-              <div><b>{st.station}</b></div>
-              <div className="muted xs">{dist != null && `${round(dist, 1)} km away · `}{st.time ? fmtTime(st.time) : ''}</div>
-              <div className="sub-iaqi">
-                {['pm25', 'pm10', 'no2', 'so2', 'co', 'o3'].filter((k) => st.iaqi?.[k] != null).map((k) => <span key={k}>{k.toUpperCase()} <b>{st.iaqi[k]}</b></span>)}
-              </div>
-              <div className="muted xs">WAQI / aqicn.org — {st.attributions?.slice(0, 2).map((a) => a.name).join('; ')}</div>
-            </div>
+        <Card className="b-tall" title="Monitoring stations nearby" icon="📡" right={<Tag kind="measured">Measured · WAQI</Tag>}>
+          {net == null ? <div className="muted sm">Finding stations…</div> : net.length ? (
+            <ul className="st-list">
+              {[...net].reverse().slice(0, 8).map((x) => {
+                const v = x.aqi
+                const cc = category(v)
+                return (
+                  <li key={x.uid}>
+                    <span className="st-n">{x.name?.split(',')[0]}<small>{round(x.dist, 1)} km · {x.time ? new Date(x.time).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : ''}</small></span>
+                    <AqiChip v={v} color={cc.color} />
+                  </li>
+                )
+              })}
+            </ul>
           ) : (
             <div className="muted sm">
-              {station?.error ? 'Ground-station feed not connected yet.' : 'Finding nearest station…'}
-              <br /><br />The model estimate is still fully live. Add <code>WAQI_TOKEN</code> to show real monitoring-station readings here.
+              {st && <p>Nearest station <b>{st.station}</b>: US AQI {st.aqi} ({fmtTime(st.time)}) — older than 3 h or farther than 25 km.</p>}
+              No fresh ground-station reading within 25 km. The model estimate above is still live.
             </div>
           )}
+          <p className="muted xs">Station values are WAQI's US-EPA index (hourly). Data: World Air Quality Index Project (aqicn.org) · CPCB / state boards.</p>
         </Card>
 
         <Card className="b-full src" right={null}>

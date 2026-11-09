@@ -136,10 +136,42 @@ const NAQI_BP = {
 }
 const NAQI_I = [0, 50, 100, 200, 300, 400, 500]
 export const NAQI_CATS = [
-  { max: 50, label: 'Good', color: '#2ee59d' }, { max: 100, label: 'Satisfactory', color: '#a3e635' },
-  { max: 200, label: 'Moderate', color: '#ffd43b' }, { max: 300, label: 'Poor', color: '#ff922b' },
-  { max: 400, label: 'Very Poor', color: '#ff4d6d' }, { max: Infinity, label: 'Severe', color: '#b5179e' },
+  { max: 50, label: 'Good', color: '#2ee59d', us: 0, meaning: 'Minimal impact.' },
+  { max: 100, label: 'Satisfactory', color: '#a3e635', us: 1, meaning: 'Minor breathing discomfort to sensitive people.' },
+  { max: 200, label: 'Moderate', color: '#ffd43b', us: 2, meaning: 'Breathing discomfort to people with lung disease such as asthma, and discomfort to people with heart disease, children and older adults.' },
+  { max: 300, label: 'Poor', color: '#ff922b', us: 3, meaning: 'Breathing discomfort to most people on prolonged exposure, and discomfort to people with heart disease.' },
+  { max: 400, label: 'Very Poor', color: '#ff4d6d', us: 4, meaning: 'Respiratory illness to people on prolonged exposure.' },
+  { max: Infinity, label: 'Severe', color: '#b5179e', us: 5, meaning: 'Affects healthy people and seriously impacts those with existing lung or heart disease.' },
 ]
+// Category object for the India (CPCB) scale, re-using the advice texts of the equivalent-severity US band
+export function naqiCategory(v) {
+  if (v == null) return category(null)
+  const n = NAQI_CATS.find((c) => v <= c.max)
+  const u = CATEGORIES[n.us]
+  return { ...u, key: 'in-' + n.label, label: n.label, short: n.label, color: n.color, glow: n.color + '88', meaning: n.meaning + ' (CPCB health statement)' }
+}
+// Invert the EPA PM2.5 index back to a concentration (for station readings that only publish the US index)
+export function usAqiToPm25(aqi) {
+  if (aqi == null) return null
+  const b = PM25_BP.find(([, , il, ih]) => aqi <= ih) || PM25_BP[PM25_BP.length - 2]
+  const [cl, ch, il, ih] = b
+  return cl + ((aqi - il) / (ih - il || 1)) * (ch - cl)
+}
+// NAQI from the latest concentrations (live / hourly). CPCB's official bulletin uses 24h averages.
+export function naqiNow(c) {
+  const subs = {}
+  for (const k of Object.keys(NAQI_BP)) {
+    let v = c?.[k]
+    if (v == null) continue
+    if (k === 'carbon_monoxide') v = v / 1000
+    subs[k] = subIndex(k, v)
+  }
+  const keys = Object.keys(subs).filter((k) => k !== 'ozone')
+  if (!keys.length) return null
+  const dom = keys.reduce((a, b) => (subs[a] >= subs[b] ? a : b))
+  return { value: subs[dom], dominant: dom, subs }
+}
+export const naqiFromStation = (usAqi) => (usAqi == null ? null : subIndex('pm2_5', usAqiToPm25(usAqi)))
 function subIndex(key, c) {
   const bp = NAQI_BP[key]
   if (c == null) return null

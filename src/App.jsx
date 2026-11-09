@@ -70,6 +70,7 @@ export default function App() {
   const [intro, setIntro] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
   const [cmd, setCmd] = useState(false)
+  const [scale, setScale] = useState(() => localStorage.getItem('saans:scale') || 'auto')
 
   useEffect(() => {
     const k = (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmd((v) => !v) } }
@@ -151,6 +152,8 @@ export default function App() {
   const cat = category(aq?.current?.us_aqi)
   const ticker = [...world].filter((p) => p.us_aqi != null).sort((a, b) => b.us_aqi - a.us_aqi)
   const head = HEADS[tab]
+  const sc = scale === 'auto' ? (/india/i.test(loc.country || '') ? 'IN' : 'US') : scale
+  const setSc = (v) => { setScale(v); localStorage.setItem('saans:scale', v) }
 
   return (
     <div className="app" style={{ '--cat': cat.color, '--catglow': cat.glow }}>
@@ -185,6 +188,10 @@ export default function App() {
             <span className="st-hint">Search any place…</span>
             <kbd>⌘K</kbd>
           </button>
+          <div className="scale-btn" title="AQI scale">
+            <button className={sc === 'IN' ? 'on' : ''} onClick={() => setSc('IN')}>🇮🇳 NAQI</button>
+            <button className={sc === 'US' ? 'on' : ''} onClick={() => setSc('US')}>🇺🇸 US</button>
+          </div>
           <button className="icon-btn" onClick={locate} title="Use my location">◎</button>
           <Clock tz={aq?.tz} />
           <div className="live"><i />LIVE</div>
@@ -210,7 +217,7 @@ export default function App() {
             {tab === 'history' && <History loc={loc} />}
             {tab === 'alerts' && <Alerts loc={loc} notify={notify} />}
             {aq && <>
-              {tab === 'overview' && <Dashboard loc={loc} aq={aq} wx={wx} station={station} onShare={() => setShare(true)} go={go} />}
+              {tab === 'overview' && <Dashboard loc={loc} aq={aq} wx={wx} station={station} onShare={() => setShare(true)} go={go} scale={sc} onScale={() => setSc(sc === 'IN' ? 'US' : 'IN')} />}
               {tab === 'forecast' && <Forecast loc={loc} aq={aq} wx={wx} />}
               {tab === 'assistant' && <Assistant loc={loc} aq={aq} wx={wx} station={station} />}
               {share && <ShareCard loc={loc} aq={aq} onClose={() => setShare(false)} />}
