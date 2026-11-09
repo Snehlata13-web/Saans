@@ -1,41 +1,46 @@
 import { useEffect, useRef, useState } from 'react'
 import { Card, Tag } from './ui'
-import { category, usCategory, round, POLLUTANTS, fmtHour, naqiNow, naqiCategory, scaleName } from '../lib/aqi'
+import { category, round, POLLUTANTS, fmtHour, scaleName, polLabel } from '../lib/aqi'
 import { insights, contextFor } from '../lib/insights'
 
 const SUGGEST = ['Is it safe to go for a run now?', 'Should my kids play outside?', 'When is the best time to go out today?', 'What is PM2.5?', 'Will air get worse tomorrow?', 'Kya mujhe mask pehenna chahiye?']
 
+// Built-in, data-grounded answers: short and only what was asked
 function localAnswer(q, { aq, wx, loc }) {
   const t = q.toLowerCase()
   const c = aq.current || {}
-  const cat = category(c.us_aqi)
   const { s } = insights(aq, wx, loc.name)
   const tf = (x) => fmtHour(x, aq.tz)
-  const nq = naqiNow(c)
-  const E = c.epa_aqi ?? 0
-  const head = /india/i.test(loc.country || '') && nq
-    ? `${loc.name}: India NAQI ${nq.value} (${naqiCategory(nq.value).label}) · US AQI ${c.epa_aqi ?? '—'} (${usCategory(c.epa_aqi).label}) — model estimate.`
-    : `${loc.name}: US AQI ${c.epa_aqi ?? '—'} (${usCategory(c.epa_aqi).label}, model estimate).`
-  if (/run|jog|exercise|walk|gym|cycle|sport|workout|daud|sair/.test(t))
-    return `${head} ${cat.activity}${s.best ? ` The cleanest 2-hour window in the next 48h is around ${tf(s.best.start)} (forecast AQI ≈ ${round(s.best.aqi)}).` : ''}`
-  if (/kid|child|baby|school|bachch/.test(t)) return `${head} ${E > 100 ? 'Children are more vulnerable — keep play indoors today and avoid traffic-heavy routes.' : 'Outdoor play is fine today.'} ${cat.sensitive}`
-  if (/mask|n95/.test(t)) return `${head} ${E > 150 ? 'Yes — wear a well-fitted N95/FFP2 outdoors.' : E > 100 ? 'Recommended for sensitive groups (N95/FFP2).' : 'Not necessary for most people right now.'} Cloth masks don't filter PM2.5.`
-  if (/best time|when.*(go|out)|kab/.test(t)) return s.best ? `Best 2-hour window: ${tf(s.best.start)} with forecast AQI ≈ ${round(s.best.aqi)} (${category(s.best.aqi).label}). This is a forecast, not a measurement.` : 'Forecast is unavailable right now.'
-  if (/tomorrow|forecast|worse|better|kal|future|predict/.test(t)) {
+  const E = c.epa_aqi ?? 0 // decisions use the EPA index (health thresholds)
+  const now = `${scaleName()} ${c.us_aqi ?? '—'} (${category(c.us_aqi).label})`
+  const best = s.best ? ` Best time: ${tf(s.best.start)}.` : ''
+  const has = (re) => re.test(t)
+
+  for (const p of POLLUTANTS) {
+    const k = p.label.toLowerCase().replace('₂', '2').replace('₃', '3')
+    if (t.includes(k) || t.includes(p.key)) return `${p.label} — ${p.desc} Now: ${round(c[p.key], 1) ?? '—'} ${p.unit} (WHO limit ${p.who}).`
+  }
+  if (has(/run|jog|exercise|walk|gym|cycl|sport|workout|daud|sair|khel/)) return E > 150 ? `No — ${now}. Exercise indoors today.${best}` : E > 100 ? `Only light exercise — ${now}.${best}` : `Yes — ${now}, fine for exercise.`
+  if (has(/kid|child|baby|school|bachch/)) return E > 100 ? `Keep kids indoors — ${now}.${best}` : `Yes, outdoor play is fine — ${now}.`
+  if (has(/mask|n95/)) return E > 150 ? `Yes, wear an N95/FFP2 outdoors — ${now}.` : E > 100 ? `Advised for sensitive people (N95) — ${now}.` : `Not needed — ${now}.`
+  if (has(/window|khidki|purifier/)) return E > 100 ? `Keep windows closed and run a purifier — ${now}.` : `Fine to open windows — ${now}.`
+  if (has(/best time|when|kab|timing/)) return s.best ? `${tf(s.best.start)} — forecast ${scaleName()} ≈ ${round(s.best.aqi)}.` : 'Forecast not available.'
+  if (has(/tomorrow|forecast|worse|better|kal|future|predict|aage/)) {
     const f = aq.forecast.slice(12, 36).map((r) => r.us_aqi).filter((v) => v != null)
-    const m = f.length ? Math.round(f.reduce((a, b) => a + b) / f.length) : null
-    return m == null ? 'Forecast not available.' : `Forecast (CAMS) for the next ~24h after tonight: average AQI ≈ ${m} (${category(m).label}), peak ≈ ${Math.max(...f)}. Right now it is ${c.us_aqi}. ${m > c.us_aqi ? 'So it is expected to get worse.' : 'So it should improve a bit.'}`
+    if (!f.length) return 'Forecast not available.'
+    const m = Math.round(f.reduce((x, y) => x + y) / f.length)
+    return `${m > (c.us_aqi ?? 0) ? 'Worse' : 'Slightly better'} — tomorrow avg ≈ ${m} (${category(m).label}), peak ≈ ${Math.max(...f)}. (Forecast)`
   }
-  if (/cigar|smok/.test(t)) return `24h average PM2.5 is ${round(s.avgs.pm2_5, 1)} µg/m³ ≈ ${round(s.cig, 1)} cigarettes/day (Berkeley Earth: 22 µg/m³ ≈ 1 cigarette).`
-  if (/diwali|cracker|patakh|firework/.test(t)) return `Firecrackers release huge bursts of PM2.5, metals and SO₂ in a few hours, and cold calm nights trap them near the ground. Open the History tab → "Diwali Effect" to see how ${loc.name}'s PM2.5 changed around every Diwali since 2023.`
-  if (/why|reason|cause|kyu/.test(t)) {
+  if (has(/cigar|smok/)) return `≈ ${round(s.cig, 1)} cigarettes/day (24h PM2.5 ${round(s.avgs.pm2_5)} µg/m³).`
+  if (has(/diwali|cracker|patakh|firework/)) return `Firecracker smoke spikes PM2.5 within hours; calm nights trap it. See History → Diwali Effect for ${loc.name}.`
+  if (has(/why|reason|cause|kyu|kyon/)) {
     const w = wx?.current
-    return `${head} Likely drivers: ${w ? `wind ${w.wind_speed_10m} km/h${w.wind_speed_10m < 6 ? ' (calm — poor dispersion)' : ''}, humidity ${w.relative_humidity_2m}%` : 'weather'}, plus local sources like traffic, construction dust, biomass/stubble burning and industry. Dominant pollutant now: ${POLLUTANTS.map((p) => ({ p, x: (c[p.key] || 0) / p.who })).sort((a, b) => b.x - a.x)[0].p.label}.`
+    return `Mainly ${polLabel(c.dominant)}${w && w.wind_speed_10m < 6 ? `, trapped by calm wind (${round(w.wind_speed_10m)} km/h)` : ''} — from traffic, dust, burning and industry.`
   }
-  for (const p of POLLUTANTS) if (t.includes(p.label.toLowerCase().replace('₂', '2').replace('₃', '3')) || t.includes(p.key)) return `${p.label}: ${p.desc} Right now: ${round(c[p.key], 1) ?? '—'} ${p.unit} (WHO guideline ${p.who}).`
-  if (/asthma|heart|elder|old|pregnan|sensitive/.test(t)) return `${head} ${cat.sensitive}`
-  if (/aqi|meaning|mean|what is/.test(t)) return `AQI (Air Quality Index) turns pollutant concentrations into one 0–500 number. 0–50 Good, 51–100 Moderate, 101–150 Unhealthy for sensitive groups, 151–200 Unhealthy, 201–300 Very unhealthy, 301+ Hazardous. ${head}`
-  return insights(aq, wx, loc.name).lines.slice(0, 4).join(' ')
+  if (has(/asthma|heart|elder|old|pregnan|sensitive|dil|saans/)) return `${category(c.us_aqi).sensitive} (${now})`
+  if (has(/safe|outside|bahar|outdoor|go out|jaa/)) return E > 150 ? `Not safe for long outdoor time — ${now}. Wear N95 if you go.${best}` : E > 100 ? `OK for short trips; sensitive people limit time — ${now}.` : `Yes — ${now}.`
+  if (has(/aqi|scale|naqi|mean|matlab/)) return `${scaleName()} turns pollutant levels into one 0–500 number — higher is worse. Now: ${now}.`
+  return `${now}. ${category(c.us_aqi).general}`
 }
 
 export default function Assistant({ aq, wx, station, loc }) {

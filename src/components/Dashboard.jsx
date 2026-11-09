@@ -68,7 +68,7 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
   const runAi = async () => {
     setAi({ busy: true })
     try {
-      const r = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: `Give me a crisp briefing for ${loc.name} right now: 1 line verdict, then 4 short bullets (health risk, who should be careful, best time to go out, what to do today). Use the ${scale === 'IN' ? 'India NAQI' : 'US AQI'} scale.` }], context: { ...contextFor(aq, wx, station, loc), stationsNearby: net?.slice(-5) } }) })
+      const r = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'brief', messages: [{ role: 'user', content: `Give me a crisp briefing for ${loc.name} right now: 1 line verdict, then 4 short bullets (health risk, who should be careful, best time to go out, what to do today). Use the ${scale === 'IN' ? 'India NAQI' : 'US AQI'} scale.` }], context: { ...contextFor(aq, wx, station, loc), stationsNearby: net?.slice(-5) } }) })
       const j = await r.json()
       if (!j.text) throw new Error(j.error)
       setAi({ text: j.text, model: j.model })
