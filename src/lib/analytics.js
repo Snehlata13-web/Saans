@@ -1,4 +1,4 @@
-import { avg, pm25ToUsAqi } from './aqi'
+import { avg, pm25ToUsAqi, activeScale, naqiNow } from './aqi'
 
 // ---------- daily aggregation ----------
 export function dayKey(t, tz) {
@@ -138,7 +138,7 @@ export function mlForecast(aqPast, wxRows, { horizon = 72, tzOffsetH = 0 } = {})
   const w = fit(all.X, all.y)
   const lastT = series[series.length - 1].t
   const futureT = Array.from({ length: horizon }, (_, k) => lastT + (k + 1) * 3600e3)
-  const preds = rollout(w, series, futureT, wx, tzOffsetH).map((p) => ({ ...p, us_aqi: pm25ToUsAqi(p.pm2_5) }))
+  const preds = rollout(w, series, futureT, wx, tzOffsetH).map((p) => ({ ...p, us_aqi: activeScale() === 'IN' ? naqiNow({ pm2_5: p.pm2_5 })?.value : pm25ToUsAqi(p.pm2_5) }))
 
   const importance = FEATS.map((f, i) => ({ f, w: w[i] })).slice(1).sort((a, b) => Math.abs(b.w) - Math.abs(a.w))
   return { preds, mae, maeBase, skill: maeBase ? 1 - mae / maeBase : null, backtest: back.map((p, i) => ({ ...p, actual: actual[i] })), importance, nTrain: all.X.length }

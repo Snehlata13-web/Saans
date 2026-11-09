@@ -64,7 +64,7 @@ Plus: live city ticker, shareable URLs (`?lat=&lon=&name=`), auto-refresh every 
 | [Open-Meteo Weather API](https://open-meteo.com/en/docs) | wind, humidity, boundary-layer height (insights + ML) | model | none |
 | [Open-Meteo Geocoding](https://open-meteo.com/en/docs/geocoding-api) | place search | — | none |
 | [BigDataCloud reverse geocode](https://www.bigdatacloud.com/free-api/free-reverse-geocode-to-city-api) | names for "near me" / map probe | — | none |
-| [Groq](https://console.groq.com) / OpenAI | optional LLM for the assistant | — | `GROQ_API_KEY` (server-side) |
+| [Google Gemini](https://aistudio.google.com/apikey) (or Groq / OpenAI) | LLM assistant + AI briefing | — | `GEMINI_API_KEY` (server-side) |
 
 ### Data honesty
 - **AQI is computed by SAANS using the official US EPA method** (NowCast 12h for PM2.5/PM10, 1h NO₂/SO₂, 8h CO) from the modelled concentrations. Open-Meteo's raw `us_aqi` was not used for the headline because it is driven by CAMS ozone, which is strongly over-estimated over South Asia (e.g. Mumbai raw 222 vs. 159 measured), and it is not capped at 500. Validation on 9 Nov 2026 against IQAir station data: Delhi 192 vs 196, Mumbai 160 vs 159.
@@ -98,7 +98,7 @@ No keys? Everything still works with Open-Meteo; the ground-station card and LLM
 ## ☁️ Deploy (Vercel)
 
 1. Push to GitHub → **Import** in Vercel (framework: Vite, auto-detected).
-2. (Optional) add env vars `WAQI_TOKEN`, `DATAGOV_API_KEY`, `GROQ_API_KEY`. The app works fully without them.
+2. (Optional) add env vars `GEMINI_API_KEY`, `WAQI_TOKEN`, `DATAGOV_API_KEY`. The app works fully without them.
 3. Deploy. `/api/*.js` become serverless functions automatically.
 
 ## ⚠️ Disclaimer

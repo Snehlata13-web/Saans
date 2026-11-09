@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { MapContainer, TileLayer, CircleMarker, Popup, Rectangle, Pane, useMap, useMapEvents, Marker } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { category, CATEGORIES, round, fmtTime } from '../lib/aqi'
+import { category, usCategory, bands, scaleName, hiThreshold, round, fmtTime } from '../lib/aqi'
 import { getMulti, getStationsInBounds, reverseGeocode } from '../lib/api'
 import { Tag } from './ui'
 
@@ -84,15 +84,15 @@ export default function MapView({ loc, world, onPick }) {
           ))}
         </Pane>
         {showSt && stations.map((s) => (
-          <CircleMarker key={s.uid} center={[s.lat, s.lon]} radius={5} pathOptions={{ color: '#fff', weight: 1, fillColor: category(s.aqi).color, fillOpacity: 0.95 }}>
-            <Popup><b>{s.name}</b><br />Measured US AQI: <b style={{ color: category(s.aqi).color }}>{s.aqi}</b><br /><small>{s.time && fmtTime(s.time)} · WAQI</small></Popup>
+          <CircleMarker key={s.uid} center={[s.lat, s.lon]} radius={5} pathOptions={{ color: '#fff', weight: 1, fillColor: usCategory(s.aqi).color, fillOpacity: 0.95 }}>
+            <Popup><b>{s.name}</b><br />Measured US AQI (WAQI): <b style={{ color: usCategory(s.aqi).color }}>{s.aqi > 500 ? '500+' : s.aqi}</b><br /><small>{s.time && fmtTime(s.time)} · WAQI</small></Popup>
           </CircleMarker>
         ))}
         {world.filter((p) => p.us_aqi != null).map((p) => (
           <CircleMarker key={p.name} center={[p.lat, p.lon]} radius={9 + Math.min(14, p.us_aqi / 25)} pathOptions={{ color: category(p.us_aqi).color, weight: 2, fillColor: category(p.us_aqi).color, fillOpacity: 0.35 }}>
             <Popup>
               <b>{p.name}</b>, {p.country}<br />
-              US AQI <b style={{ color: category(p.us_aqi).color }}>{p.us_aqi}</b> · {category(p.us_aqi).label}<br />
+              {scaleName()} <b style={{ color: category(p.us_aqi).color }}>{p.us_aqi}</b> · {category(p.us_aqi).label}<br />
               PM2.5 {p.pm2_5} · PM10 {p.pm10} µg/m³<br /><small>Model estimate (CAMS) · {fmtTime(p.t)}</small><br />
               <button className="btn sm" onClick={() => onPick(p)}>Open dashboard</button>
             </Popup>
@@ -104,7 +104,7 @@ export default function MapView({ loc, world, onPick }) {
             {probe.loading ? 'Loading…' : probe.error ? `Error: ${probe.error}` : (
               <div>
                 <b>{probe.name}</b>{probe.country && `, ${probe.country}`}<br />
-                US AQI <b style={{ color: category(probe.us_aqi).color }}>{probe.us_aqi ?? '—'}</b> · {category(probe.us_aqi).label}<br />
+                {scaleName()} <b style={{ color: category(probe.us_aqi).color }}>{probe.us_aqi ?? '—'}</b> · {category(probe.us_aqi).label}<br />
                 PM2.5 {round(probe.pm2_5, 1)} · PM10 {round(probe.pm10, 1)} · NO₂ {round(probe.nitrogen_dioxide, 1)}<br />
                 O₃ {round(probe.ozone, 1)} · SO₂ {round(probe.sulphur_dioxide, 1)} · CO {round(probe.carbon_monoxide)} µg/m³<br />
                 <small>Model estimate (CAMS) · {fmtTime(probe.t)}</small><br />
@@ -115,7 +115,7 @@ export default function MapView({ loc, world, onPick }) {
         )}
       </MapContainer>
       <div className="legend">
-        {CATEGORIES.map((c, i) => <span key={c.key}><i style={{ background: c.color }} />{(i ? CATEGORIES[i - 1].max + 1 : 0)}{c.max < 999 ? '–' + c.max : '+'} {c.short || c.label}</span>)}
+        <b>{scaleName()}</b>{bands().map((c, i, B) => <span key={c.key}><i style={{ background: c.color }} />{(i ? B[i - 1].max + 1 : 0)}{c.max < 999 ? '–' + c.max : '+'} {c.short || c.label}</span>)}<span className="muted">· white-ring dots = WAQI stations (US AQI)</span>
       </div>
       <div className="hot-list">
         <b>🔥 Hotspots now</b>

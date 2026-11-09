@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Card, AqiChip } from './ui'
 import { loadAlerts, saveAlerts, checkAlerts } from '../lib/alerts'
-import { CATEGORIES, fmtTime } from '../lib/aqi'
+import { bands, fmtTime, activeScale, scaleName } from '../lib/aqi'
 import LocationSearch from './LocationSearch'
 
 export default function Alerts({ loc, notify }) {
   const [alerts, setAlerts] = useState(loadAlerts)
   const [target, setTarget] = useState(loc)
-  const [th, setTh] = useState(150)
+  const [th, setTh] = useState(() => (activeScale() === 'IN' ? 300 : 150))
   const [fc, setFc] = useState(true)
   const [perm, setPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'unsupported')
   const [busy, setBusy] = useState(false)
@@ -15,7 +15,7 @@ export default function Alerts({ loc, notify }) {
 
   const add = async () => {
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') setPerm(await Notification.requestPermission())
-    upd([...alerts, { id: Date.now(), name: target.name, lat: target.lat, lon: target.lon, threshold: Number(th), forecast: fc }])
+    upd([...alerts, { id: Date.now(), name: target.name, lat: target.lat, lon: target.lon, threshold: Number(th), forecast: fc, scale: activeScale() }])
   }
   const test = async () => { setBusy(true); try { const f = await checkAlerts(notify); if (!f.length) notify({ title: '✅ All clear', body: 'No alert thresholds crossed right now.' }) } catch (e) { notify({ title: 'Check failed', body: e.message }) } setAlerts(loadAlerts()); setBusy(false) }
 
@@ -26,9 +26,9 @@ export default function Alerts({ loc, notify }) {
         <div className="alert-form">
           <div><label className="xs muted">Location</label><div className="pick">📍 <b>{target.name}</b></div><LocationSearch compact placeholder="Change location…" onPick={setTarget} /></div>
           <div>
-            <label className="xs muted">Notify when US AQI ≥ <b>{th}</b></label>
-            <input type="range" min="50" max="300" step="10" value={th} onChange={(e) => setTh(e.target.value)} className="range" />
-            <div className="quick">{CATEGORIES.slice(0, 5).map((c) => <button key={c.key} style={{ '--c': c.color }} onClick={() => setTh(c.max + 1)}>{c.max + 1}</button>)}</div>
+            <label className="xs muted">Notify when {scaleName()} ≥ <b>{th}</b></label>
+            <input type="range" min="50" max="500" step="10" value={th} onChange={(e) => setTh(e.target.value)} className="range" />
+            <div className="quick">{bands().slice(0, 5).map((c) => <button key={c.key} style={{ '--c': c.color }} onClick={() => setTh(c.max + 1)}>{c.max + 1}</button>)}</div>
           </div>
           <label className="sm"><input type="checkbox" checked={fc} onChange={(e) => setFc(e.target.checked)} /> Also warn me from the forecast</label>
           <button className="btn glow" onClick={add}>+ Create alert</button>
@@ -40,7 +40,7 @@ export default function Alerts({ loc, notify }) {
         <ul className="alerts">
           {alerts.map((a) => (
             <li key={a.id}>
-              <div><b>{a.name}</b> · AQI ≥ {a.threshold}{a.forecast && ' · 🔮'}<br /><small className="muted">{a.checkedAt ? <>last: <AqiChip v={a.last} /> at {fmtTime(a.checkedAt)}</> : 'not checked yet'}</small></div>
+              <div><b>{a.name}</b> · {a.scale === 'IN' ? 'NAQI' : 'US AQI'} ≥ {a.threshold}{a.forecast && ' · 🔮'}<br /><small className="muted">{a.checkedAt ? <>last: <AqiChip v={a.last} /> at {fmtTime(a.checkedAt)}</> : 'not checked yet'}</small></div>
               <button className="x" onClick={() => upd(alerts.filter((x) => x.id !== a.id))}>×</button>
             </li>
           ))}

@@ -3,7 +3,7 @@ import { ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, Tooltip, 
 import { Card, Tag, Loader, ErrorBox, AqiChip } from './ui'
 import { getHistory } from '../lib/api'
 import { daily, detectAnomalies, pctChange } from '../lib/analytics'
-import { avg, round, category, cigarettes } from '../lib/aqi'
+import { avg, round, category, cigarettes, scaleName, hiThreshold } from '../lib/aqi'
 import { DIWALI } from '../lib/cities'
 
 const iso = (d) => d.toISOString().slice(0, 10)
@@ -36,7 +36,7 @@ export default function History({ loc }) {
 
   const half = Math.floor(days.length / 2)
   const trend = pctChange(avg(days.slice(0, half).map((d) => d.pm2_5)), avg(days.slice(half).map((d) => d.pm2_5)))
-  const spikes = days.filter((d, i) => i > 0 && days[i - 1].us_aqi && d.us_aqi > days[i - 1].us_aqi * 1.3 && d.us_aqi > 80)
+  const spikes = days.filter((d, i) => i > 0 && days[i - 1].us_aqi && d.us_aqi > days[i - 1].us_aqi * 1.3 && d.us_aqi > hiThreshold() / 2)
   const worst = days.reduce((m, d) => (!m || d.us_aqi > m.us_aqi ? d : m), null)
   const bestD = days.reduce((m, d) => (!m || d.us_aqi < m.us_aqi ? d : m), null)
   const overWHO = days.filter((d) => d.pm2_5 > 15).length
@@ -46,7 +46,7 @@ export default function History({ loc }) {
     `# SAANS Pollution Impact Report — ${loc.name}`,
     `Period: ${start} → ${end} (${days.length} days) · Data: Open-Meteo Air Quality API (Copernicus CAMS, modelled)`,
     ``,
-    `- Average US AQI: **${round(avg(days.map((d) => d.us_aqi)))}** (${category(avg(days.map((d) => d.us_aqi))).label})`,
+    `- Average ${scaleName()}: **${round(avg(days.map((d) => d.us_aqi)))}** (${category(avg(days.map((d) => d.us_aqi))).label})`,
     `- Average PM2.5: **${round(avg(days.map((d) => d.pm2_5)), 1)} µg/m³**, PM10: **${round(avg(days.map((d) => d.pm10)), 1)} µg/m³**`,
     `- Worst day: **${worst.day}** (AQI ${round(worst.us_aqi)}, peak hour ${round(worst.us_aqi_max)}) · Cleanest day: **${bestD.day}** (AQI ${round(bestD.us_aqi)})`,
     `- Days above WHO PM2.5 guideline (15 µg/m³): **${overWHO}/${days.length}** (${round((overWHO / days.length) * 100)}%)`,
@@ -78,14 +78,14 @@ export default function History({ loc }) {
         <ErrorBox error={h.error} onRetry={h.retry} />
         {days.length > 0 && <>
           <div className="kpis">
-            <div><span>Avg AQI</span><b><AqiChip v={round(avg(days.map((d) => d.us_aqi)))} /></b></div>
+            <div><span>Avg {scaleName()}</span><b><AqiChip v={round(avg(days.map((d) => d.us_aqi)))} /></b></div>
             <div><span>PM2.5 trend</span><b className={trend > 0 ? 'up' : 'down'}>{trend != null ? (trend > 0 ? '▲ +' : '▼ ') + round(trend, 1) + '%' : '—'}</b></div>
             <div><span>Worst day</span><b>{worst.day} <AqiChip v={round(worst.us_aqi)} /></b></div>
             <div><span>Cleanest day</span><b>{bestD.day} <AqiChip v={round(bestD.us_aqi)} /></b></div>
             <div><span>Days &gt; WHO PM2.5</span><b>{overWHO}/{days.length}</b></div>
             <div><span>Spikes / anomalies</span><b>{spikes.length} / {anomalies.events.length}</b></div>
           </div>
-          <h4>Daily AQI (avg & peak hour) with day-over-day % change</h4>
+          <h4>Daily {scaleName()} (avg & peak hour) with day-over-day % change</h4>
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart data={chartDays}>
               <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ff4d6d" stopOpacity={0.7} /><stop offset="1" stopColor="#5ec8ff" stopOpacity={0.05} /></linearGradient></defs>
@@ -100,8 +100,8 @@ export default function History({ loc }) {
               <Area type="monotone" dataKey="us_aqi" name="Avg AQI" stroke="#ff7a8a" fill="url(#ga)" strokeWidth={2} />
               <Line type="monotone" dataKey="us_aqi_max" name="Peak hour AQI" stroke="#ffd43b" dot={false} strokeDasharray="4 3" />
               {spikes.map((s) => <ReferenceDot key={s.day} x={s.day} y={s.us_aqi} r={7} fill="#ff2a2a" stroke="#fff" label={{ value: '⚡', position: 'top' }} />)}
-              <ReferenceLine y={100} stroke="#ffd43b55" strokeDasharray="2 4" />
-              <ReferenceLine y={150} stroke="#ff922b55" strokeDasharray="2 4" />
+              <ReferenceLine y={hiThreshold() * 2 / 3} stroke="#ffd43b55" strokeDasharray="2 4" />
+              <ReferenceLine y={hiThreshold()} stroke="#ff922b55" strokeDasharray="2 4" />
             </ComposedChart>
           </ResponsiveContainer>
           <h4>PM2.5 vs PM10 (daily mean, µg/m³)</h4>

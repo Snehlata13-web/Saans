@@ -32,7 +32,18 @@ export const CATEGORIES = [
     activity: 'No outdoor activity. Treat as a health emergency.' },
 ]
 
-export function category(aqi) {
+// ---- active scale (India NAQI or US EPA) — set once per render by <App/> ----
+let ACTIVE = 'US'
+export const setActiveScale = (sc) => { ACTIVE = sc === 'IN' ? 'IN' : 'US' }
+export const activeScale = () => ACTIVE
+export const scaleName = () => (ACTIVE === 'IN' ? 'India NAQI' : 'US AQI')
+export const hiThreshold = () => (ACTIVE === 'IN' ? 300 : 150)
+export function category(aqi) { return ACTIVE === 'IN' ? naqiCategory(aqi) : usCategory(aqi) }
+export function bands() {
+  if (ACTIVE === 'IN') return NAQI_CATS.map((c) => naqiCategory(c.max === Infinity ? 450 : c.max))
+  return CATEGORIES
+}
+export function usCategory(aqi) {
   if (aqi == null || Number.isNaN(aqi)) return { key: 'na', label: 'No data', color: '#7a869a', glow: 'rgba(122,134,154,.4)', emoji: '❔', meaning: 'No data available.', general: '', sensitive: '', activity: '' }
   return CATEGORIES.find((c) => aqi <= c.max)
 }
@@ -106,11 +117,16 @@ export function withEpaAqi(rows) {
       carbon_monoxide: epaIndex('co', mean(w8.map((x) => x.carbon_monoxide)) != null ? mean(w8.map((x) => x.carbon_monoxide)) / 1145 : null),
     }
     const o3 = mean(w8.map((x) => x.ozone))
-    return { ...r, ...aqiFromSubs(subs), o3_aqi: o3 != null ? epaIndex('o3', o3 / 1.96) : null, us_aqi_cams: r.us_aqi }
+    const e = aqiFromSubs(subs), inA = naqiNow(r)?.value ?? null
+    return { ...r, ...e, epa_aqi: e.us_aqi, in_aqi: inA, us_aqi: ACTIVE === 'IN' ? inA : e.us_aqi, o3_aqi: o3 != null ? epaIndex('o3', o3 / 1.96) : null, us_aqi_cams: r.us_aqi }
   })
 }
 // Single snapshot (no history available) — instantaneous concentrations
 export function epaFromCurrent(c) {
+  const e = epaSubs(c), inA = naqiNow(c)?.value ?? null
+  return { ...e, epa_aqi: e.us_aqi, in_aqi: inA, us_aqi: ACTIVE === 'IN' ? inA : e.us_aqi }
+}
+function epaSubs(c) {
   return aqiFromSubs({
     pm2_5: epaIndex('pm2_5', c.pm2_5), pm10: epaIndex('pm10', c.pm10),
     nitrogen_dioxide: epaIndex('no2', c.nitrogen_dioxide != null ? c.nitrogen_dioxide / 1.88 : null),
@@ -145,10 +161,10 @@ export const NAQI_CATS = [
 ]
 // Category object for the India (CPCB) scale, re-using the advice texts of the equivalent-severity US band
 export function naqiCategory(v) {
-  if (v == null) return category(null)
+  if (v == null) return usCategory(null)
   const n = NAQI_CATS.find((c) => v <= c.max)
   const u = CATEGORIES[n.us]
-  return { ...u, key: 'in-' + n.label, label: n.label, short: n.label, color: n.color, glow: n.color + '88', meaning: n.meaning + ' (CPCB health statement)' }
+  return { ...u, max: n.max, key: 'in-' + n.label, label: n.label, short: n.label, color: n.color, glow: n.color + '88', meaning: n.meaning + ' (CPCB health statement)' }
 }
 // Invert the EPA PM2.5 index back to a concentration (for station readings that only publish the US index)
 export function usAqiToPm25(aqi) {

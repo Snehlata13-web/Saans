@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { getAirQuality, getWeather, getStation, getMulti, reverseGeocode } from './lib/api'
 import { CITIES } from './lib/cities'
-import { category } from './lib/aqi'
+import { category, setActiveScale } from './lib/aqi'
 import { checkAlerts } from './lib/alerts'
 import Dashboard from './components/Dashboard'
 import CommandPalette from './components/CommandPalette'
@@ -71,6 +71,8 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [cmd, setCmd] = useState(false)
   const [scale, setScale] = useState(() => localStorage.getItem('saans:scale') || 'auto')
+  const sc = scale === 'auto' ? (/india/i.test(loc.country || '') ? 'IN' : 'US') : scale
+  setActiveScale(sc)
 
   useEffect(() => {
     const k = (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmd((v) => !v) } }
@@ -117,7 +119,7 @@ export default function App() {
     getWeather(loc.lat, loc.lon).then((d) => !off && setWx(d)).catch(() => !off && setWx(null))
     getStation(loc.lat, loc.lon).then((d) => !off && setStation(d)).catch((e) => !off && setStation({ error: e.status === 503 ? 'not configured' : e.message }))
     return () => { off = true }
-  }, [loc.lat, loc.lon, refreshKey])
+  }, [loc.lat, loc.lon, refreshKey, sc])
 
   // auto refresh every 10 min
   useEffect(() => { const i = setInterval(() => setRefreshKey((k) => k + 1), 10 * 60e3); return () => clearInterval(i) }, [])
@@ -128,7 +130,7 @@ export default function App() {
     load()
     const i = setInterval(load, 15 * 60e3)
     return () => clearInterval(i)
-  }, [])
+  }, [sc])
 
   // alerts watcher
   useEffect(() => {
@@ -152,7 +154,6 @@ export default function App() {
   const cat = category(aq?.current?.us_aqi)
   const ticker = [...world].filter((p) => p.us_aqi != null).sort((a, b) => b.us_aqi - a.us_aqi)
   const head = HEADS[tab]
-  const sc = scale === 'auto' ? (/india/i.test(loc.country || '') ? 'IN' : 'US') : scale
   const setSc = (v) => { setScale(v); localStorage.setItem('saans:scale', v) }
 
   return (
@@ -205,7 +206,7 @@ export default function App() {
           </div></div>
         )}
 
-        <main key={tab} className="page">
+        <main key={tab + sc} className="page">
           {head && <PageHead kicker={head[0]} title={head[1]} sub={head[2].replace('{city}', loc.name)} />}
           {loading && !aq && <Loader />}
           <ErrorBox error={err} onRetry={() => setRefreshKey((k) => k + 1)} />

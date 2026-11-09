@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react'
 import { Card, Tag, AqiChip, Loader, ErrorBox } from './ui'
 import { getMulti, reverseGeocode } from '../lib/api'
-import { category, round, fmtTime } from '../lib/aqi'
+import { category, round, fmtTime, scaleName } from '../lib/aqi'
 
 const Globe = lazy(() => import('./Globe'))
 const DIRS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
@@ -38,7 +38,7 @@ export default function World({ world, worldErr, loc, aq, onPick }) {
             </li>
           ))}
         </ol>
-        {world[0] && <p className="muted xs">{worst ? 'Most polluted' : 'Cleanest'} first · US AQI · updated {fmtTime(world[0].t)} · Open-Meteo CAMS</p>}
+        {world[0] && <p className="muted xs">{worst ? 'Most polluted' : 'Cleanest'} first · {scaleName()} · updated {fmtTime(world[0].t)} · Open-Meteo CAMS</p>}
       </Card>
       <CleanAirFinder loc={loc} aq={aq} onPick={onPick} />
     </div>

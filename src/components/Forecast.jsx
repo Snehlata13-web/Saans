@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { ResponsiveContainer, ComposedChart, Line, Area, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine, ReferenceArea } from 'recharts'
 import { Card, Tag, AqiChip } from './ui'
 import { mlForecast, daily, bestWindow } from '../lib/analytics'
-import { category, round } from '../lib/aqi'
+import { category, round, hiThreshold, scaleName } from '../lib/aqi'
 import { tipStyle } from './History'
 
 export default function Forecast({ loc, aq, wx }) {
@@ -22,14 +22,14 @@ export default function Forecast({ loc, aq, wx }) {
     return [...m.values()].sort((a, b) => a.t - b.t)
   }, [aq, ml])
 
-  const spikes = aq.forecast.filter((r, i, a) => r.us_aqi != null && (r.us_aqi > 150 || (cur && r.us_aqi > cur * 1.3)) && (i === 0 || a[i - 1].us_aqi <= r.us_aqi) && (i === a.length - 1 || a[i + 1].us_aqi < r.us_aqi))
+  const spikes = aq.forecast.filter((r, i, a) => r.us_aqi != null && (r.us_aqi > hiThreshold() || (cur && r.us_aqi > cur * 1.3)) && (i === 0 || a[i - 1].us_aqi <= r.us_aqi) && (i === a.length - 1 || a[i + 1].us_aqi < r.us_aqi))
   const fDays = daily(aq.forecast, tz)
   const best = bestWindow(aq.forecast, 2, tz)
   const tf = (t) => new Date(t).toLocaleString('en-IN', { weekday: 'short', hour: 'numeric', hour12: true, timeZone: tz })
 
   return (
     <div className="grid">
-      <Card className="span3" title={`AQI forecast · ${loc.name}`} icon="🔮" right={<div className="tags"><Tag kind="history">Past 48h (modelled)</Tag><Tag kind="forecast">CAMS forecast</Tag>{ml && <Tag kind="ml" />}</div>}>
+      <Card className="span3" title={`${scaleName()} forecast · ${loc.name}`} icon="🔮" right={<div className="tags"><Tag kind="history">Past 48h (modelled)</Tag><Tag kind="forecast">CAMS forecast</Tag>{ml && <Tag kind="ml" />}</div>}>
         <ResponsiveContainer width="100%" height={340}>
           <ComposedChart data={data}>
             <defs>
@@ -41,7 +41,7 @@ export default function Forecast({ loc, aq, wx }) {
             <Tooltip contentStyle={tipStyle} labelFormatter={(t) => tf(t)} formatter={(v, n) => [round(v), n]} />
             <ReferenceArea x1={now} x2={data[data.length - 1]?.t} fill="#ffb34710" />
             <ReferenceLine x={now} stroke="#fff" strokeDasharray="3 3" label={{ value: 'NOW', fill: '#fff', fontSize: 11, position: 'insideTopLeft' }} />
-            <ReferenceLine y={150} stroke="#ff4d6d66" strokeDasharray="2 4" />
+            <ReferenceLine y={hiThreshold()} stroke="#ff4d6d66" strokeDasharray="2 4" />
             <Area dataKey="past" name="Past (modelled)" stroke="#5ec8ff" fill="url(#gp)" strokeWidth={2} connectNulls />
             <Line dataKey="fc" name="CAMS forecast" stroke="#ffb347" strokeWidth={2.5} strokeDasharray="6 4" dot={false} connectNulls />
             {ml && <Line dataKey="ml" name="SAANS ML prediction" stroke="#e879f9" strokeWidth={2} strokeDasharray="2 3" dot={false} connectNulls />}

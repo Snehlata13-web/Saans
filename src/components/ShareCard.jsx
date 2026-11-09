@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { category, round, fmtTime, POLLUTANTS } from '../lib/aqi'
+import { category, round, fmtTime, POLLUTANTS, scaleName } from '../lib/aqi'
 import { summary } from '../lib/insights'
 
 function draw(cv, { loc, aq }) {
@@ -34,7 +34,7 @@ function draw(cv, { loc, aq }) {
   g.shadowColor = cat.color; g.shadowBlur = 60
   g.fillText(String(c.us_aqi ?? '—'), W / 2, 610)
   g.shadowBlur = 0
-  g.font = '600 34px Inter'; g.fillStyle = '#cfd6ea'; g.fillText('US AQI', W / 2, 670)
+  g.font = '600 34px Inter'; g.fillStyle = '#cfd6ea'; g.fillText(scaleName(), W / 2, 670)
   g.fillStyle = cat.color
   const label = `${cat.emoji} ${cat.label}`
   g.font = '700 48px "Space Grotesk"'
@@ -69,7 +69,7 @@ export default function ShareCard({ loc, aq, onClose }) {
   const share = async () => {
     const blob = await (await fetch(url)).blob()
     const file = new File([blob], `saans-${loc.name}.png`, { type: 'image/png' })
-    const text = `Air quality in ${loc.name} right now: US AQI ${aq.current?.us_aqi} (${category(aq.current?.us_aqi).label}). Check yours on SAANS 🪔 #BreatheBetter`
+    const text = `Air quality in ${loc.name} right now: ${scaleName()} ${aq.current?.us_aqi} (${category(aq.current?.us_aqi).label}). Check yours on SAANS 🪔 #BreatheBetter`
     if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], text }).catch(() => {})
     else window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text + ' ' + location.href), '_blank')
   }

@@ -4,7 +4,7 @@ import { Card, Tag, AqiChip, Loader } from './ui'
 import LocationSearch from './LocationSearch'
 import { getAirQuality } from '../lib/api'
 import { daily } from '../lib/analytics'
-import { POLLUTANTS, round, category } from '../lib/aqi'
+import { POLLUTANTS, round, category, scaleName } from '../lib/aqi'
 import { tipStyle } from './History'
 
 const COLORS = ['#5ec8ff', '#ff7a8a', '#ffd43b', '#2ee59d', '#e879f9']
@@ -53,7 +53,7 @@ export default function Compare({ loc }) {
                 {!d ? <Loader text="" /> : d.error ? <span className="warn xs">{d.error}</span> : <>
                   <div className="cmp-aqi" style={{ color: c.color }}>{d.current?.us_aqi ?? '—'}</div>
                   <div className="sm">{c.label}</div>
-                  {best && best.l !== l && d.current?.us_aqi != null && <div className="xs muted">+{d.current.us_aqi - best.d.current.us_aqi} AQI vs cleanest</div>}
+                  {best && best.l !== l && d.current?.us_aqi != null && <div className="xs muted">+{d.current.us_aqi - best.d.current.us_aqi} vs cleanest</div>}
                 </>}
               </div>
             )
@@ -63,7 +63,7 @@ export default function Compare({ loc }) {
           <table className="tbl">
             <thead><tr><th>Pollutant</th>{ready.map((r) => <th key={r.l.name} style={{ color: COLORS[r.i] }}>{r.l.name}</th>)}</tr></thead>
             <tbody>
-              <tr><td>US AQI</td>{ready.map((r) => <td key={r.l.name}><AqiChip v={r.d.current?.us_aqi} /></td>)}</tr>
+              <tr><td>{scaleName()}</td>{ready.map((r) => <td key={r.l.name}><AqiChip v={r.d.current?.us_aqi} /></td>)}</tr>
               {POLLUTANTS.map((p) => {
                 const vals = ready.map((r) => r.d.current?.[p.key]).filter((v) => v != null)
                 const mn = Math.min(...vals)

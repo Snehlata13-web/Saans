@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, useEffect, Suspense } from 'react'
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import { OrbitControls, Stars, Html } from '@react-three/drei'
 import * as THREE from 'three'
-import { category } from '../lib/aqi'
+import { category, hiThreshold, scaleName } from '../lib/aqi'
 
 const R = 2
 export function latLonToVec(lat, lon, r = R) {
@@ -36,7 +36,7 @@ function Pillar({ p, onSelect, selected }) {
   const ring = useRef()
   const [hover, setHover] = useState(false)
   const cat = category(p.us_aqi)
-  const h = Math.max(0.04, Math.min(1.4, (p.us_aqi || 0) / 220))
+  const h = Math.max(0.04, Math.min(1.4, (p.us_aqi || 0) / (hiThreshold() * 1.45)))
   const { pos, quat, base } = useMemo(() => {
     const n = latLonToVec(p.lat, p.lon, 1).normalize()
     return {
@@ -45,7 +45,7 @@ function Pillar({ p, onSelect, selected }) {
       quat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), n),
     }
   }, [p.lat, p.lon, h])
-  const hot = (p.us_aqi || 0) > 150
+  const hot = (p.us_aqi || 0) > hiThreshold()
   useFrame(({ clock }) => {
     if (ring.current) {
       const s = 1 + ((clock.elapsedTime * 0.8 + p.lat) % 1) * 2.2
@@ -73,7 +73,7 @@ function Pillar({ p, onSelect, selected }) {
         <Html position={pos.clone().multiplyScalar(1 + h / 3)} center distanceFactor={7} zIndexRange={[20, 0]}>
           <div className="globe-tip" style={{ borderColor: cat.color }}>
             <b>{p.name}</b>
-            <span style={{ color: cat.color }}>AQI {p.us_aqi ?? '—'}</span>
+            <span style={{ color: cat.color }}>{scaleName()} {p.us_aqi ?? '—'}</span>
             <small>PM2.5 {p.pm2_5 ?? '—'} µg/m³</small>
           </div>
         </Html>

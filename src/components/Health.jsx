@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Card } from './ui'
-import { CATEGORIES, category, POLLUTANTS, round } from '../lib/aqi'
+import { bands, category, POLLUTANTS, round, scaleName } from '../lib/aqi'
 
 const PERSONAS = [
   { k: 'general', l: '🧑 General public', f: (c) => c.general },
@@ -15,18 +15,19 @@ const PERSONAS = [
 export default function Health({ aq }) {
   const aqi = aq?.current?.us_aqi
   const cur = category(aqi)
-  const [sel, setSel] = useState(cur.key === 'na' ? 'good' : cur.key)
+  const [sel, setSel] = useState(cur.key === 'na' ? bands()[0].key : cur.key)
   useEffect(() => { if (cur.key !== 'na') setSel(cur.key) }, [cur.key])
   const [p, setP] = useState('general')
-  const c = CATEGORIES.find((x) => x.key === sel) || CATEGORIES[0]
+  const CATS = bands()
+  const c = CATS.find((x) => x.key === sel) || CATS[0]
   const per = PERSONAS.find((x) => x.k === p)
   return (
     <div className="grid">
-      <Card className="span3" title="What does the AQI mean?" icon="🩺">
+      <Card className="span3" title={`What does the ${scaleName()} mean?`} icon="🩺">
         <div className="scale">
-          {CATEGORIES.map((x, i) => (
+          {CATS.map((x, i) => (
             <button key={x.key} className={'sc' + (sel === x.key ? ' on' : '') + (cur.key === x.key ? ' cur' : '')} style={{ '--c': x.color }} onClick={() => setSel(x.key)}>
-              <b>{i ? CATEGORIES[i - 1].max + 1 : 0}{x.max < 999 ? '–' + x.max : '+'}</b>
+              <b>{i ? CATS[i - 1].max + 1 : 0}{x.max < 999 ? '–' + x.max : '+'}</b>
               <span>{x.emoji} {x.short || x.label}</span>
               {cur.key === x.key && <em>you are here</em>}
             </button>
@@ -43,9 +44,9 @@ export default function Health({ aq }) {
         </div>
       </Card>
 
-      <Card className="span2" title={`Personal advice for right now (AQI ${aqi ?? '—'})`} icon="🎯">
+      <Card className="span2" title={`Personal advice for right now (${scaleName()} ${aqi ?? '—'})`} icon="🎯">
         <div className="personas">{PERSONAS.map((x) => <button key={x.k} className={p === x.k ? 'on' : ''} onClick={() => setP(x.k)}>{x.l}</button>)}</div>
-        <div className="advice" style={{ '--c': cur.color }}>{per.f(cur, aqi ?? 0)}</div>
+        <div className="advice" style={{ '--c': cur.color }}>{per.f(cur, aq?.current?.epa_aqi ?? 0)}</div>
         <div className="tips">
           <div>😷 <b>Masks:</b> only N95/FFP2/KN95 filter PM2.5. Cloth & surgical masks do little. Fit matters.</div>
           <div>🏠 <b>Indoors:</b> keep windows shut on bad days, run a HEPA purifier, avoid incense, candles & frying smoke.</div>

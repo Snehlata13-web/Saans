@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Card, Tag } from './ui'
-import { category, round, POLLUTANTS, fmtHour, naqiNow, naqiCategory } from '../lib/aqi'
+import { category, usCategory, round, POLLUTANTS, fmtHour, naqiNow, naqiCategory } from '../lib/aqi'
 import { insights, contextFor } from '../lib/insights'
 
 const SUGGEST = ['Is it safe to go for a run now?', 'Should my kids play outside?', 'When is the best time to go out today?', 'What is PM2.5?', 'Will air get worse tomorrow?', 'Kya mujhe mask pehenna chahiye?']
@@ -12,13 +12,14 @@ function localAnswer(q, { aq, wx, loc }) {
   const { s } = insights(aq, wx, loc.name)
   const tf = (x) => fmtHour(x, aq.tz)
   const nq = naqiNow(c)
+  const E = c.epa_aqi ?? 0
   const head = /india/i.test(loc.country || '') && nq
-    ? `${loc.name}: India NAQI ${nq.value} (${naqiCategory(nq.value).label}) · US AQI ${c.us_aqi ?? '—'} (${cat.label}) — model estimate.`
-    : `${loc.name}: US AQI ${c.us_aqi ?? '—'} (${cat.label}, model estimate).`
+    ? `${loc.name}: India NAQI ${nq.value} (${naqiCategory(nq.value).label}) · US AQI ${c.epa_aqi ?? '—'} (${usCategory(c.epa_aqi).label}) — model estimate.`
+    : `${loc.name}: US AQI ${c.epa_aqi ?? '—'} (${usCategory(c.epa_aqi).label}, model estimate).`
   if (/run|jog|exercise|walk|gym|cycle|sport|workout|daud|sair/.test(t))
     return `${head} ${cat.activity}${s.best ? ` The cleanest 2-hour window in the next 48h is around ${tf(s.best.start)} (forecast AQI ≈ ${round(s.best.aqi)}).` : ''}`
-  if (/kid|child|baby|school|bachch/.test(t)) return `${head} ${c.us_aqi > 100 ? 'Children are more vulnerable — keep play indoors today and avoid traffic-heavy routes.' : 'Outdoor play is fine today.'} ${cat.sensitive}`
-  if (/mask|n95/.test(t)) return `${head} ${c.us_aqi > 150 ? 'Yes — wear a well-fitted N95/FFP2 outdoors.' : c.us_aqi > 100 ? 'Recommended for sensitive groups (N95/FFP2).' : 'Not necessary for most people right now.'} Cloth masks don't filter PM2.5.`
+  if (/kid|child|baby|school|bachch/.test(t)) return `${head} ${E > 100 ? 'Children are more vulnerable — keep play indoors today and avoid traffic-heavy routes.' : 'Outdoor play is fine today.'} ${cat.sensitive}`
+  if (/mask|n95/.test(t)) return `${head} ${E > 150 ? 'Yes — wear a well-fitted N95/FFP2 outdoors.' : E > 100 ? 'Recommended for sensitive groups (N95/FFP2).' : 'Not necessary for most people right now.'} Cloth masks don't filter PM2.5.`
   if (/best time|when.*(go|out)|kab/.test(t)) return s.best ? `Best 2-hour window: ${tf(s.best.start)} with forecast AQI ≈ ${round(s.best.aqi)} (${category(s.best.aqi).label}). This is a forecast, not a measurement.` : 'Forecast is unavailable right now.'
   if (/tomorrow|forecast|worse|better|kal|future|predict/.test(t)) {
     const f = aq.forecast.slice(12, 36).map((r) => r.us_aqi).filter((v) => v != null)
@@ -68,7 +69,7 @@ export default function Assistant({ aq, wx, station, loc }) {
       const j = await r.json()
       if (!j.text) throw new Error(j.error || 'no text')
       answer = j.text
-      setMode('LLM')
+      setMode(j.model ? (j.model.startsWith('gemini') ? 'Gemini · ' : 'LLM · ') + j.model : 'LLM')
     } catch {
       answer = localAnswer(text, { aq, wx, loc })
       setMode('built-in engine')

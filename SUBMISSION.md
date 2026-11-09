@@ -34,7 +34,7 @@ Air pollution is invisible. Most dashboards show a number and stop there. SAANS 
 4. **Open-Meteo Weather API**: wind, humidity, boundary-layer height (used for insights and as ML features).
 5. **Open-Meteo Geocoding API**: place search.
 6. **BigDataCloud Reverse Geocoding**: names for "Near me" and map probes.
-7. **Groq / OpenAI** (optional, server-side key): LLM for the assistant. Without a key, a built-in engine grounded on the live data answers instead.
+7. **Google Gemini API** (optional, server-side key; Groq/OpenAI also supported): LLM assistant + one-click AI briefing. Without a key, a built-in engine grounded on the live data answers instead.
 
 ## 6. Screenshots
 See `docs/` in the repo (dashboard, globe, map, history, Diwali effect, forecast, compare, health, AI, alerts).
@@ -84,7 +84,7 @@ See `docs/` in the repo (dashboard, globe, map, history, Diwali effect, forecast
 
 ### Extra
 - Diwali Effect analysis.
-- India NAQI ⇄ US AQI toggle.
+- Global India NAQI ⇄ US AQI switch: every page (globe, map, history, forecast, compare, health, alerts, share card, AI) follows the selected scale.
 - 3D breath orb, 3D globe, 3D smog backdrop.
 - ⌘K command palette, live city ticker, PWA manifest, shareable URLs.
 - Offline / stale-cache fallback, rate-limit handling, auto-refresh every 10 min.

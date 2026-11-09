@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { getStationsInBounds, getCpcb } from '../lib/api'
 import { Card, Tag, AqiChip, CountUp, Ring } from './ui'
-import { category, naqiCategory, naqiNow, POLLUTANTS, round, fmtTime, fmtHour, haversine, polLabel } from '../lib/aqi'
-import { insights } from '../lib/insights'
+import { category, usCategory, naqiCategory, naqiNow, POLLUTANTS, round, fmtTime, fmtHour, haversine, polLabel } from '../lib/aqi'
+import { insights, contextFor } from '../lib/insights'
 
 const BreathOrb = lazy(() => import('./BreathOrb'))
 
@@ -50,6 +50,18 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
   const c = aq.current || {}
   const { lines, s } = insights(aq, wx, loc.name)
   const st = station && !station.error && station.aqi != null ? station : null
+  const [ai, setAi] = useState(null)
+  const runAi = async () => {
+    setAi({ busy: true })
+    try {
+      const r = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: `Give me a crisp briefing for ${loc.name} right now: 1 line verdict, then 4 short bullets (health risk, who should be careful, best time to go out, what to do today). Use the ${scale === 'IN' ? 'India NAQI' : 'US AQI'} scale.` }], context: { ...contextFor(aq, wx, station, loc), stationsNearby: net?.slice(-5) } }) })
+      const j = await r.json()
+      if (!j.text) throw new Error(j.error)
+      setAi({ text: j.text, model: j.model })
+    } catch (e) {
+      setAi({ err: e.message === 'No AI key configured' ? 'LLM briefing needs GEMINI_API_KEY on the server — the data-driven insights below are generated locally from live numbers.' : 'AI briefing unavailable right now (' + e.message + ').' })
+    }
+  }
   const [net, setNet] = useState(null)
   useEffect(() => {
     let off = false
@@ -109,7 +121,7 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
           {useCp ? (() => { const h = [...cp.stations].sort((a, b) => b.aqi - a.aqi)[0]; return <p className="sm hotspot">🔥 Worst CPCB station: <b>{h.name.split(',')[0]}</b> — NAQI {h.aqi} ({h.dominant})</p> })()
             : hot && net.length > 1 && <p className="sm hotspot">🔥 Hotspot right now: <b>{hot.name?.split(',')[0]}</b> — US AQI {hot.aqi > 500 ? '500+' : hot.aqi} <span className="muted xs">(measured {fmtTime(hot.time)})</span></p>}
           {!useSt && !IN && net && <p className="xs muted">No ground station within 25 km reported in the last 3 hours — showing the Copernicus CAMS model estimate, which can under-estimate local hotspots.</p>}
-          {c.us_aqi >= 500 && !useSt && <p className="warn sm">⚠️ Model shows an extreme event at the top of the AQI scale (e.g. a modelled dust storm, PM10 {round(c.pm10)} µg/m³). Dust models can over-estimate.</p>}
+          {c.epa_aqi >= 500 && !useSt && <p className="warn sm">⚠️ Model shows an extreme event at the top of the AQI scale (e.g. a modelled dust storm, PM10 {round(c.pm10)} µg/m³). Dust models can over-estimate.</p>}
           <div className="facts">
             <div><b><CountUp value={s.cig} decimals={1} /></b><span>cigarettes / day<br />equivalent 🚬</span></div>
             <div><b><CountUp value={s.whoX} decimals={1} />×</b><span>WHO PM2.5<br />daily limit</span></div>
@@ -164,7 +176,9 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
           )
         })}
 
-        <Card className="b-wide" title="AI insights" icon="✦" right={<button className="btn ghost sm" onClick={() => go('assistant')}>Ask follow-ups →</button>}>
+        <Card className="b-wide" title="AI insights" icon="✦" right={<div className="tags"><button className="btn sm glow" onClick={runAi} disabled={ai?.busy}>{ai?.busy ? 'Thinking…' : '✨ AI briefing'}</button><button className="btn ghost sm" onClick={() => go('assistant')}>Ask follow-ups →</button></div>}>
+          {ai?.text && <div className="ai-brief"><div className="ai-h">✨ {ai.model || 'AI'} briefing · grounded on the live numbers below</div>{ai.text}</div>}
+          {ai?.err && <p className="xs muted">{ai.err}</p>}
           <ul className="insights">{lines.map((l, i) => <li key={i} style={{ animationDelay: i * 90 + 'ms' }}>{l}</li>)}</ul>
         </Card>
 
@@ -182,7 +196,7 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
             <ul className="st-list">
               {[...net].reverse().slice(0, 8).map((x) => {
                 const v = x.aqi
-                const cc = category(v)
+                const cc = usCategory(v)
                 return (
                   <li key={x.uid}>
                     <span className="st-n">{x.name?.split(',')[0]}<small>{round(x.dist, 1)} km · {x.time ? new Date(x.time).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }) : ''}</small></span>

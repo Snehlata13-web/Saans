@@ -1,4 +1,4 @@
-import { avg, category, cigarettes, computeNAQI, naqiNow, POLLUTANTS, round, fmtTime, fmtHour } from './aqi'
+import { avg, category, cigarettes, computeNAQI, naqiNow, POLLUTANTS, round, fmtTime, fmtHour, scaleName } from './aqi'
 import { bestWindow, pctChange } from './analytics'
 
 export function last24(aq) {
@@ -34,7 +34,7 @@ export function insights(aq, wx, place) {
   const c = aq.current || {}
   const cat = category(c.us_aqi)
   const out = []
-  out.push(`${place} is at US AQI ${c.us_aqi ?? '—'} (${cat.label}). ${cat.meaning}`)
+  out.push(`${place} is at ${scaleName()} ${c.us_aqi ?? '—'} (${cat.label}). ${cat.meaning}`)
   if (s.whoX != null) out.push(`24-hour average PM2.5 is ${round(s.avgs.pm2_5, 1)} µg/m³ — ${round(s.whoX, 1)}× the WHO daily guideline of 15 µg/m³.`)
   if (s.cig != null && s.cig >= 0.3) out.push(`Breathing this air for a day is roughly like smoking ${round(s.cig, 1)} cigarette${s.cig >= 1.5 ? 's' : ''} (Berkeley Earth estimate).`)
   if (s.change != null && Math.abs(s.change) >= 5) out.push(`Air is ${s.change > 0 ? 'worse' : 'better'} than yesterday by ${Math.abs(round(s.change))}% (24h average AQI).`)
@@ -60,7 +60,8 @@ export function contextFor(aq, wx, station, loc) {
     groundStation: station && !station.error ? { station: station.station, aqi: station.aqi, time: station.time, dominant: station.dominant } : null,
     last24hAverages: Object.fromEntries(Object.entries(s.avgs).map(([k, v]) => [k, round(v, 1)])),
     indiaNAQI24hAvg: s.naqi?.value, indiaNAQINow: naqiNow(aq.current || {})?.value, cigarettesPerDay: round(s.cig, 1),
-    forecastNext48h: aq.forecast.slice(0, 48).filter((_, i) => i % 3 === 0).map((r) => ({ time: fmtTime(r.t, aq.tz), us_aqi: r.us_aqi, pm2_5: r.pm2_5 })),
+    scaleInUse: scaleName(),
+    forecastNext48h: aq.forecast.slice(0, 48).filter((_, i) => i % 3 === 0).map((r) => ({ time: fmtTime(r.t, aq.tz), usAqi: r.epa_aqi, indiaNaqi: r.in_aqi, pm2_5: r.pm2_5 })),
     weather: wx?.current,
   }
 }
