@@ -54,6 +54,7 @@ Plus: live city ticker, shareable URLs (`?lat=&lon=&name=`), auto-refresh every 
 |---|---|---|---|
 | [Open-Meteo Air Quality API](https://open-meteo.com/en/docs/air-quality-api) (Copernicus CAMS) | current, hourly history (since 2022), 5-day forecast, multi-city | **Model estimate / forecast** | none |
 | [WAQI / aqicn.org](https://aqicn.org/api/) | nearest monitoring station, stations on map | **Ground-station measurement** | `WAQI_TOKEN` (server-side) |
+| [CPCB via data.gov.in](https://data.gov.in/resource/real-time-air-quality-index-various-locations) | official India NAQI per station (24h avg) | **Official measurement** | `DATAGOV_API_KEY` (server-side) |
 | [Open-Meteo Weather API](https://open-meteo.com/en/docs) | wind, humidity, boundary-layer height (insights + ML) | model | none |
 | [Open-Meteo Geocoding](https://open-meteo.com/en/docs/geocoding-api) | place search | — | none |
 | [BigDataCloud reverse geocode](https://www.bigdatacloud.com/free-api/free-reverse-geocode-to-city-api) | names for "near me" / map probe | — | none |

@@ -173,6 +173,10 @@ export async function getWeather(lat, lon, { pastDays = 30, forecastDays = 4 } =
   return { current: d.current, rows: toRows(d.hourly) }
 }
 
+export async function getCpcb(lat, lon, radius = 30) {
+  return getJSON(`/api/cpcb?${qs({ lat: lat.toFixed(3), lon: lon.toFixed(3), radius })}`, { ttl: 10 * 60e3, retries: 0, persist: false, timeout: 30000 })
+}
+
 // ----- WAQI ground stations (real measurements) via serverless proxy -----
 export async function getStation(lat, lon) {
   const d = await getJSON(`/api/waqi?${qs({ type: 'geo', lat, lon })}`, { ttl: 10 * 60e3, retries: 0, persist: false })

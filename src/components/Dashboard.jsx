@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { getStationsInBounds } from '../lib/api'
+import { getStationsInBounds, getCpcb } from '../lib/api'
 import { Card, Tag, AqiChip, CountUp, Ring } from './ui'
 import { category, naqiCategory, naqiNow, POLLUTANTS, round, fmtTime, fmtHour, haversine, polLabel } from '../lib/aqi'
 import { insights } from '../lib/insights'
@@ -63,14 +63,23 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
       }).catch(() => !off && setNet([]))
     return () => { off = true }
   }, [loc.lat, loc.lon])
+  const [cpcb, setCpcb] = useState(null)
+  useEffect(() => {
+    let off = false
+    setCpcb(null)
+    if (/india/i.test(loc.country || '')) getCpcb(loc.lat, loc.lon).then((r) => !off && setCpcb(r)).catch((e) => !off && setCpcb({ error: e.message }))
+    return () => { off = true }
+  }, [loc.lat, loc.lon, loc.country])
+  const cp = cpcb?.stations?.length ? cpcb : null
   const med = net?.length ? net[Math.floor(net.length / 2)].aqi : null
   const hot = net?.length ? net[net.length - 1] : null
   const IN = scale === 'IN'
   // Stations (WAQI) publish the US-EPA index only, so they drive the headline on the US scale.
   // On the India scale SAANS applies CPCB breakpoints to the latest concentrations.
-  const useSt = med != null && !IN
+  const useCp = IN && cp
+  const useSt = (med != null && !IN) || useCp
   const modelVal = IN ? naqiNow(c)?.value : c.us_aqi
-  const headline = useSt ? med : modelVal
+  const headline = useCp ? cp.cityAqi : useSt ? med : modelVal
   const cat = IN ? naqiCategory(headline) : category(headline)
   const scaleName = IN ? 'India NAQI (CPCB)' : 'US AQI (EPA)'
   const orbit = POLLUTANTS.filter((p) => c[p.key] != null).map((p) => {
@@ -90,14 +99,15 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
               <span className="aqi-unit">{scaleName} · {useSt ? 'MEASURED' : 'MODEL ESTIMATE'}</span>
               <span className="cat-pill" style={{ '--c': cat.color }}>{cat.emoji} {cat.label}</span>
               <div className="tags">
-                {useSt ? <Tag kind="measured">Median of {net.length} station{net.length > 1 ? 's' : ''} ≤25 km</Tag> : <Tag kind={aq.stale ? 'stale' : 'model'}>{IN ? 'CPCB scale · from CAMS concentrations' : undefined}</Tag>}
+                {useCp ? <Tag kind="measured">Official CPCB · {cp.stations.length} stations ≤30 km</Tag> : useSt ? <Tag kind="measured">Median of {net.length} station{net.length > 1 ? 's' : ''} ≤25 km</Tag> : <Tag kind={aq.stale ? 'stale' : 'model'}>{IN ? 'CPCB scale · from CAMS concentrations' : undefined}</Tag>}
                 {useSt ? <Tag kind="model">Model {modelVal ?? '—'}</Tag> : med != null && <Tag kind="measured">Stations median US AQI {med}</Tag>}
               </div>
               <span className="xs muted">Main pollutant: <b>{polLabel(c.dominant)}</b> · <button className="linkbtn" onClick={onScale}>switch to {IN ? 'US AQI' : 'India NAQI'}</button></span>
             </div>
           </div>
           <p className="lede">{cat.meaning} <span>{cat.general}</span></p>
-          {hot && net.length > 1 && <p className="sm hotspot">🔥 Hotspot right now: <b>{hot.name?.split(',')[0]}</b> — US AQI {hot.aqi} <span className="muted xs">(measured {fmtTime(hot.time)})</span></p>}
+          {useCp ? (() => { const h = [...cp.stations].sort((a, b) => b.aqi - a.aqi)[0]; return <p className="sm hotspot">🔥 Worst CPCB station: <b>{h.name.split(',')[0]}</b> — NAQI {h.aqi} ({h.dominant})</p> })()
+            : hot && net.length > 1 && <p className="sm hotspot">🔥 Hotspot right now: <b>{hot.name?.split(',')[0]}</b> — US AQI {hot.aqi} <span className="muted xs">(measured {fmtTime(hot.time)})</span></p>}
           {!useSt && !IN && net && <p className="xs muted">No ground station within 25 km reported in the last 3 hours — showing the Copernicus CAMS model estimate, which can under-estimate local hotspots.</p>}
           {c.us_aqi >= 500 && !useSt && <p className="warn sm">⚠️ Model shows an extreme event at the top of the AQI scale (e.g. a modelled dust storm, PM10 {round(c.pm10)} µg/m³). Dust models can over-estimate.</p>}
           <div className="facts">
@@ -158,8 +168,17 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
           <ul className="insights">{lines.map((l, i) => <li key={i} style={{ animationDelay: i * 90 + 'ms' }}>{l}</li>)}</ul>
         </Card>
 
-        <Card className="b-tall" title="Monitoring stations nearby" icon="📡" right={<Tag kind="measured">Measured · WAQI</Tag>}>
-          {net == null ? <div className="muted sm">Finding stations…</div> : net.length ? (
+        <Card className="b-tall" title="Monitoring stations nearby" icon="📡" right={<Tag kind="measured">{useCp ? 'Measured · CPCB' : 'Measured · WAQI'}</Tag>}>
+          {useCp ? (
+            <ul className="st-list">
+              {[...cp.stations].sort((x, y) => y.aqi - x.aqi).slice(0, 10).map((x) => (
+                <li key={x.name}>
+                  <span className="st-n">{x.name.split(',')[0]}<small>{x.dist} km · {x.dominant} · {x.time ? fmtTime(x.time) : ''}</small></span>
+                  <AqiChip v={x.aqi} color={naqiCategory(x.aqi).color} />
+                </li>
+              ))}
+            </ul>
+          ) : net == null ? <div className="muted sm">Finding stations…</div> : net.length ? (
             <ul className="st-list">
               {[...net].reverse().slice(0, 8).map((x) => {
                 const v = x.aqi
@@ -178,7 +197,7 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
               No fresh ground-station reading within 25 km. The model estimate above is still live.
             </div>
           )}
-          <p className="muted xs">Station values are WAQI's US-EPA index (hourly). Data: World Air Quality Index Project (aqicn.org) · CPCB / state boards.</p>
+          <p className="muted xs">{useCp ? 'Official CPCB NAQI (24-h averages) via data.gov.in Open Government Data. ' : 'Station values are WAQI\'s US-EPA index (hourly). '}Data: World Air Quality Index Project (aqicn.org) · CPCB / state boards.</p>
         </Card>
 
         <Card className="b-full src" right={null}>
