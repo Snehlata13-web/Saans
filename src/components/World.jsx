@@ -74,7 +74,7 @@ function CleanAirFinder({ loc, aq, onPick }) {
           {st.top.map((p) => {
             const diff = (st.here?.us_aqi ?? 0) - p.us_aqi
             return (
-              <div key={p.lat} className="f-card" style={{ '--c': category(p.us_aqi).color }}>
+              <div key={p.lat} className="f-card tilt" style={{ '--c': category(p.us_aqi).color }}>
                 <b>{p.name}</b><small className="muted">{p.admin}</small>
                 <div className="f-aqi">{p.us_aqi}</div>
                 <div className="xs">{p.dist} km {p.dir} · {diff > 0 ? <span className="down">{diff} AQI cleaner</span> : 'similar'}</div>

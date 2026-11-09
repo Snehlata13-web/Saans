@@ -55,7 +55,7 @@ export default function Forecast({ loc, aq, wx }) {
           {fDays.map((d) => {
             const c = category(d.us_aqi)
             return (
-              <div key={d.day} className="fday" style={{ '--c': c.color }}>
+              <div key={d.day} className="fday tilt" style={{ '--c': c.color }}>
                 <div className="muted sm">{new Date(d.day + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</div>
                 <div className="fday-v">{round(d.us_aqi)}</div>
                 <div className="sm">{c.emoji} {c.short || c.label}</div>

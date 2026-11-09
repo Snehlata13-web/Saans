@@ -46,7 +46,7 @@ export default function Compare({ loc }) {
           {rows.map(({ l, i, d }) => {
             const c = category(d?.current?.us_aqi)
             return (
-              <div key={l.lat + l.name} className={'cmp-card' + (best && best.l === l ? ' best' : '')} style={{ '--c': COLORS[i], '--cc': c.color }}>
+              <div key={l.lat + l.name} className={'cmp-card tilt' + (best && best.l === l ? ' best' : '')} style={{ '--c': COLORS[i], '--cc': c.color }}>
                 {best && best.l === l && <div className="crown">👑 Cleanest</div>}
                 <button className="x" onClick={() => setList((ls) => ls.filter((x) => x !== l))}>×</button>
                 <b>{l.name}</b><span className="muted xs">{l.country}</span>

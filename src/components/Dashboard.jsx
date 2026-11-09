@@ -1,10 +1,24 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { getStationsInBounds, getCpcb } from '../lib/api'
 import { Card, Tag, AqiChip, CountUp, Ring } from './ui'
-import { category, usCategory, naqiCategory, naqiNow, POLLUTANTS, round, fmtTime, fmtHour, haversine, polLabel } from '../lib/aqi'
+import { bands, category, usCategory, naqiCategory, naqiNow, POLLUTANTS, round, fmtTime, fmtHour, haversine, polLabel } from '../lib/aqi'
 import { insights, contextFor } from '../lib/insights'
 
 const BreathOrb = lazy(() => import('./BreathOrb'))
+
+function ScaleMeter({ value }) {
+  const B = bands()
+  const max = B[B.length - 2].max * 1.25
+  const pos = Math.min(100, ((value || 0) / max) * 100)
+  return (
+    <div className="meter">
+      <div className="meter-bar" style={{ background: `linear-gradient(90deg, ${B.map((b, i) => `${b.color} ${Math.min(100, ((i ? B[i - 1].max : 0) / max) * 100)}%`).join(', ')})` }}>
+        <i className="meter-pin" style={{ left: pos + '%' }}><b>{value ?? '—'}</b></i>
+      </div>
+      <div className="meter-l">{B.map((b) => <span key={b.key}>{b.short || b.label}</span>)}</div>
+    </div>
+  )
+}
 
 function Spark({ aq }) {
   const now = Date.now()
@@ -106,7 +120,7 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
           <div className="kicker"><i />LIVE AIR · {loc.country || 'Earth'} · {fmtTime(c.t, aq.tz)}</div>
           <h1 className="mega" data-text={loc.name}>{loc.name}</h1>
           <div className="aqi-row">
-            <div className="aqi-mega" style={{ '--c': cat.color }}><CountUp value={headline} /></div>
+            <div className="aqi-wrap" style={{ '--c': cat.color }}><span className="halo" /><div className="aqi-mega"><CountUp value={headline} /></div></div>
             <div className="aqi-side">
               <span className="aqi-unit">{scaleName} · {useSt ? 'MEASURED' : 'MODEL ESTIMATE'}</span>
               <span className="cat-pill" style={{ '--c': cat.color }}>{cat.emoji} {cat.label}</span>
@@ -117,7 +131,16 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
               <span className="xs muted">Main pollutant: <b>{polLabel(c.dominant)}</b> · <button className="linkbtn" onClick={onScale}>switch to {IN ? 'US AQI' : 'India NAQI'}</button></span>
             </div>
           </div>
+          <ScaleMeter value={headline} />
           <p className="lede">{cat.meaning} <span>{cat.general}</span></p>
+          {wx?.current && (
+            <div className="wx-pills">
+              <span>🌡️ <b>{round(wx.current.temperature_2m)}°C</b></span>
+              <span>💨 <b>{round(wx.current.wind_speed_10m)} km/h</b>{wx.current.wind_speed_10m < 6 ? ' · calm, smog trapped' : ''}</span>
+              <span>💧 <b>{wx.current.relative_humidity_2m}%</b> humidity</span>
+              <span>🧪 PM2.5 <b>{round(c.pm2_5)}</b> µg/m³</span>
+            </div>
+          )}
           {useCp ? (() => { const h = [...cp.stations].sort((a, b) => b.aqi - a.aqi)[0]; return <p className="sm hotspot">🔥 Worst CPCB station: <b>{h.name.split(',')[0]}</b> — NAQI {h.aqi} ({h.dominant})</p> })()
             : hot && net.length > 1 && <p className="sm hotspot">🔥 Hotspot right now: <b>{hot.name?.split(',')[0]}</b> — US AQI {hot.aqi > 500 ? '500+' : hot.aqi} <span className="muted xs">(measured {fmtTime(hot.time)})</span></p>}
           {!useSt && !IN && net && <p className="xs muted">No ground station within 25 km reported in the last 3 hours — showing the Copernicus CAMS model estimate, which can under-estimate local hotspots.</p>}
@@ -148,7 +171,7 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
           <Spark aq={aq} />
         </Card>
 
-        <Card className="b-tall" title="Best time to step out" icon="🏃" right={<Tag kind="forecast" />}>
+        <Card className="b-tall glowborder" title="Best time to step out" icon="🏃" right={<Tag kind="forecast" />}>
           {s.best ? (
             <div className="best">
               <div className="best-t">{fmtHour(s.best.start, aq.tz)}</div>
@@ -164,7 +187,7 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
           const x = v != null ? v / p.who : null
           const col = x == null ? '#7a869a' : x <= 1 ? '#2ee59d' : x <= 2 ? '#ffd43b' : x <= 4 ? '#ff922b' : '#ff4d6d'
           return (
-            <div className="card pol" key={p.key} style={{ '--pc': col }} title={p.desc}>
+            <div className="card pol tilt" key={p.key} style={{ '--pc': col }} title={p.desc}>
               <div className="spot" />
               <Ring pct={(x || 0) / 4} color={col} size={70}><b>{x != null ? round(x, 1) + '×' : '—'}</b></Ring>
               <div>
@@ -176,7 +199,7 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
           )
         })}
 
-        <Card className="b-wide" title="AI insights" icon="✦" right={<div className="tags"><button className="btn sm glow" onClick={runAi} disabled={ai?.busy}>{ai?.busy ? 'Thinking…' : '✨ AI briefing'}</button><button className="btn ghost sm" onClick={() => go('assistant')}>Ask follow-ups →</button></div>}>
+        <Card className="b-wide glowborder" title="AI insights" icon="✦" right={<div className="tags"><button className="btn sm glow" onClick={runAi} disabled={ai?.busy}>{ai?.busy ? 'Thinking…' : '✨ AI briefing'}</button><button className="btn ghost sm" onClick={() => go('assistant')}>Ask follow-ups →</button></div>}>
           {ai?.text && <div className="ai-brief"><div className="ai-h">✨ {ai.model || 'AI'} briefing · grounded on the live numbers below</div>{ai.text}</div>}
           {ai?.err && <p className="xs muted">{ai.err}</p>}
           <ul className="insights">{lines.map((l, i) => <li key={i} style={{ animationDelay: i * 90 + 'ms' }}>{l}</li>)}</ul>

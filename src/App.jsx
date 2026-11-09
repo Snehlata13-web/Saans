@@ -75,14 +75,24 @@ export default function App() {
   setActiveScale(sc)
 
   useEffect(() => {
+    let lastTilt = null
     const k = (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmd((v) => !v) } }
     // spotlight effect: cards glow where the cursor is
     const m = (e) => {
       const c = e.target.closest?.('.card')
-      if (!c) return
-      const r = c.getBoundingClientRect()
-      c.style.setProperty('--mx', e.clientX - r.left + 'px')
-      c.style.setProperty('--my', e.clientY - r.top + 'px')
+      if (c) {
+        const r = c.getBoundingClientRect()
+        c.style.setProperty('--mx', e.clientX - r.left + 'px')
+        c.style.setProperty('--my', e.clientY - r.top + 'px')
+      }
+      const t = e.target.closest?.('.tilt')
+      if (lastTilt && lastTilt !== t) { lastTilt.style.setProperty('--rx', '0deg'); lastTilt.style.setProperty('--ry', '0deg') }
+      if (t) {
+        const r = t.getBoundingClientRect()
+        t.style.setProperty('--ry', ((e.clientX - r.left) / r.width - 0.5) * 14 + 'deg')
+        t.style.setProperty('--rx', -((e.clientY - r.top) / r.height - 0.5) * 14 + 'deg')
+      }
+      lastTilt = t
     }
     window.addEventListener('keydown', k)
     window.addEventListener('pointermove', m, { passive: true })

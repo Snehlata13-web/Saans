@@ -26,7 +26,7 @@ export default function Health({ aq }) {
       <Card className="span3" title={`What does the ${scaleName()} mean?`} icon="🩺">
         <div className="scale">
           {CATS.map((x, i) => (
-            <button key={x.key} className={'sc' + (sel === x.key ? ' on' : '') + (cur.key === x.key ? ' cur' : '')} style={{ '--c': x.color }} onClick={() => setSel(x.key)}>
+            <button key={x.key} className={'sc tilt' + (sel === x.key ? ' on' : '') + (cur.key === x.key ? ' cur' : '')} style={{ '--c': x.color }} onClick={() => setSel(x.key)}>
               <b>{i ? CATS[i - 1].max + 1 : 0}{x.max < 999 ? '–' + x.max : '+'}</b>
               <span>{x.emoji} {x.short || x.label}</span>
               {cur.key === x.key && <em>you are here</em>}
