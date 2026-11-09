@@ -43,7 +43,8 @@ export default function Assistant({ aq, wx, station, loc }) {
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState(false)
   const [listening, setListening] = useState(false)
-  const [speak, setSpeak] = useState(true)
+  const [speak, setSpeak] = useState(() => localStorage.getItem('saans:speak') === '1')
+  useEffect(() => () => window.speechSynthesis?.cancel(), [])
   const [mode, setMode] = useState('…')
   const box = useRef()
   const rec = useRef()
@@ -104,7 +105,7 @@ export default function Assistant({ aq, wx, station, loc }) {
         <form className="chat-in" onSubmit={(e) => { e.preventDefault(); ask(q) }}>
           <button type="button" className={'mic' + (listening ? ' on' : '')} onClick={mic} title="Voice input">🎙️</button>
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={listening ? 'Listening…' : 'Ask about the air… (English / Hinglish)'} />
-          <label className="xs muted"><input type="checkbox" checked={speak} onChange={(e) => setSpeak(e.target.checked)} /> 🔊 speak</label>
+          <label className="xs muted"><input type="checkbox" checked={speak} onChange={(e) => { setSpeak(e.target.checked); localStorage.setItem('saans:speak', e.target.checked ? '1' : '0'); if (!e.target.checked) window.speechSynthesis?.cancel() }} /> 🔊 read answers aloud</label>
           <button className="btn glow" disabled={busy}>Send</button>
         </form>
       </Card>
