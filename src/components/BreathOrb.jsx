@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Float, MeshDistortMaterial, Sparkles } from '@react-three/drei'
+import { Float, MeshDistortMaterial, Sparkles, Html } from '@react-three/drei'
 import * as THREE from 'three'
 
 // A breathing "air sample" — particle density scales with live PM2.5
@@ -67,14 +67,38 @@ function Breather({ color, pm }) {
   )
 }
 
-export default function BreathOrb({ color = '#2ee59d', pm = 10, height = 340 }) {
+function Orbiters({ items }) {
+  const g = useRef()
+  useFrame(({ clock }) => { g.current.rotation.y = clock.elapsedTime * 0.18 })
+  return (
+    <group ref={g} rotation={[0.25, 0, 0.12]}>
+      {items.map((it, i) => {
+        const a = (i / items.length) * Math.PI * 2
+        return (
+          <group key={it.label} position={[Math.cos(a) * 2.35, Math.sin(a * 2) * 0.35, Math.sin(a) * 2.35]}>
+            <mesh>
+              <sphereGeometry args={[0.06, 16, 16]} />
+              <meshBasicMaterial color={it.color} toneMapped={false} />
+            </mesh>
+            <Html center distanceFactor={8} zIndexRange={[5, 0]} style={{ pointerEvents: 'none' }}>
+              <div className="orbit-chip" style={{ '--c': it.color }}><b>{it.label}</b><span>{it.value}</span></div>
+            </Html>
+          </group>
+        )
+      })}
+    </group>
+  )
+}
+
+export default function BreathOrb({ color = '#2ee59d', pm = 10, height = 340, orbit, zoom = 5.2 }) {
   return (
     <div style={{ height, width: '100%' }}>
-      <Canvas camera={{ position: [0, 0, 5.2], fov: 45 }} dpr={[1, 2]} gl={{ alpha: true, antialias: true }}>
+      <Canvas camera={{ position: [0, 0, zoom], fov: 45 }} dpr={[1, 2]} gl={{ alpha: true, antialias: true }}>
         <ambientLight intensity={0.6} />
         <pointLight position={[3, 3, 4]} intensity={40} color={color} />
         <pointLight position={[-4, -2, 2]} intensity={20} color="#ff9f1c" />
         <Breather color={color} pm={pm} />
+        {orbit && <Orbiters items={orbit} />}
         <Sparkles count={40} scale={6} size={2} speed={0.3} color="#ffd27a" />
       </Canvas>
     </div>

@@ -3,9 +3,11 @@ import { getAirQuality, getWeather, getStation, getMulti, reverseGeocode } from 
 import { CITIES } from './lib/cities'
 import { category } from './lib/aqi'
 import { checkAlerts } from './lib/alerts'
-import LocationSearch from './components/LocationSearch'
 import Dashboard from './components/Dashboard'
-import { Loader, ErrorBox } from './components/ui'
+import CommandPalette from './components/CommandPalette'
+import { Loader, ErrorBox, PageHead } from './components/ui'
+
+const Backdrop = lazy(() => import('./components/Backdrop'))
 
 const World = lazy(() => import('./components/World'))
 const MapView = lazy(() => import('./components/MapView'))
@@ -17,10 +19,34 @@ const Assistant = lazy(() => import('./components/Assistant'))
 const Alerts = lazy(() => import('./components/Alerts'))
 const ShareCard = lazy(() => import('./components/ShareCard'))
 
+const I = (d) => <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{d}</svg>
+const ICONS = {
+  overview: I(<><path d="M3 12h3l2-6 4 12 2-6h7" /></>),
+  world: I(<><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></>),
+  map: I(<><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" /><path d="M9 4v14M15 6v14" /></>),
+  history: I(<><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5M12 7v5l3 3" /></>),
+  forecast: I(<><path d="M17 18H7a4 4 0 1 1 .9-7.9A6 6 0 0 1 19 12a3 3 0 0 1-2 6z" /><path d="m11 13 2 2 3-4" /></>),
+  compare: I(<><path d="M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0L5 7zM19 7l-3 7a3 3 0 0 0 6 0l-3-7z" /></>),
+  health: I(<><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 1 0-7.8 7.8L12 22l8.8-8.6a5.5 5.5 0 0 0 0-7.8z" /><path d="M7 12h3l1-2 2 4 1-2h3" /></>),
+  assistant: I(<><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" /><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" /></>),
+  alerts: I(<><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" /></>),
+}
+
 const TABS = [
   ['overview', '◉', 'Live'], ['world', '🌍', '3D Globe'], ['map', '🗺️', 'Map'], ['history', '📈', 'History'],
   ['forecast', '🔮', 'Forecast'], ['compare', '⚖️', 'Compare'], ['health', '🩺', 'Health'], ['assistant', '🤖', 'AI'], ['alerts', '🔔', 'Alerts'],
 ]
+
+const HEADS = {
+  world: ['Planet pulse', 'The world, breathing.', 'Live AQI for 76 cities rendered as glowing pillars on a 3D Earth. Drag to spin, click a pillar to fly there.'],
+  map: ['Interactive map', 'Pollution, mapped.', 'A live heatmap of modelled AQI, real monitoring stations and hotspots. Click anywhere on Earth to probe the air.'],
+  history: ['Time machine', 'How the air has changed.', 'Daily trends, spikes, anomalies and a full impact report for {city} — plus the Diwali firecracker effect.'],
+  forecast: ['Look ahead', 'Tomorrow\'s air, today.', 'Copernicus CAMS forecast for {city}, cross-checked by SAANS\' own ML model trained live in your browser.'],
+  compare: ['Side by side', 'Who breathes easier?', 'Compare pollutants and 7-day trends across up to five places.'],
+  health: ['Stay safe', 'What the numbers mean for you.', 'AQI categories decoded, with advice for children, elders, asthma, heart patients, athletes and more.'],
+  assistant: ['SAANS AI', 'Ask the air anything.', 'A voice-enabled assistant grounded on live data for {city}. English, Hindi or Hinglish.'],
+  alerts: ['Never be surprised', 'Smart AQI alerts.', 'Get notified when the air crosses your limit — or when the forecast says it will.'],
+}
 
 function initialLoc() {
   const p = new URLSearchParams(location.search)
@@ -43,6 +69,22 @@ export default function App() {
   const [toasts, setToasts] = useState([])
   const [intro, setIntro] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [cmd, setCmd] = useState(false)
+
+  useEffect(() => {
+    const k = (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmd((v) => !v) } }
+    // spotlight effect: cards glow where the cursor is
+    const m = (e) => {
+      const c = e.target.closest?.('.card')
+      if (!c) return
+      const r = c.getBoundingClientRect()
+      c.style.setProperty('--mx', e.clientX - r.left + 'px')
+      c.style.setProperty('--my', e.clientY - r.top + 'px')
+    }
+    window.addEventListener('keydown', k)
+    window.addEventListener('pointermove', m, { passive: true })
+    return () => { window.removeEventListener('keydown', k); window.removeEventListener('pointermove', m) }
+  }, [])
 
   const notify = useCallback((t) => {
     const id = Math.random()
@@ -108,6 +150,7 @@ export default function App() {
 
   const cat = category(aq?.current?.us_aqi)
   const ticker = [...world].filter((p) => p.us_aqi != null).sort((a, b) => b.us_aqi - a.us_aqi)
+  const head = HEADS[tab]
 
   return (
     <div className="app" style={{ '--cat': cat.color, '--catglow': cat.glow }}>
@@ -119,56 +162,98 @@ export default function App() {
         </div>
       )}
       <div className="bg"><i className="b1" /><i className="b2" /><i className="b3" /><div className="gridfx" /></div>
+      <Suspense fallback={null}><Backdrop color={cat.color} aqi={aq?.current?.us_aqi} /></Suspense>
+      <div className="noise" />
 
-      <header className="top">
-        <div className="brand" onClick={() => go('overview')}>
-          <span className="logo">🪔</span>
-          <div><b>SAANS</b><small>Air Quality Intelligence</small></div>
-        </div>
-        <LocationSearch onPick={pick} />
-        <button className="btn ghost" onClick={locate} title="Use my location">📍 Near me</button>
-        <div className="live"><i />LIVE</div>
-      </header>
+      <aside className="dock">
+        <div className="dock-logo" onClick={() => go('overview')}>🪔</div>
+        {TABS.map(([k, ic, l]) => (
+          <button key={k} className={tab === k ? 'on' : ''} onClick={() => go(k)} aria-label={l}>
+            <span className="d-ic">{ICONS[k] || ic}</span><span className="d-l">{l}</span>
+          </button>
+        ))}
+      </aside>
 
-      {ticker.length > 0 && (
-        <div className="ticker"><div className="ticker-in">
-          {[...ticker, ...ticker].map((p, i) => (
-            <span key={i} onClick={() => pick(p)}><i style={{ background: category(p.us_aqi).color }} />{p.name} <b style={{ color: category(p.us_aqi).color }}>{p.us_aqi}</b></span>
-          ))}
-        </div></div>
-      )}
+      <div className="shell">
+        <header className="top">
+          <div className="brand" onClick={() => go('overview')}>
+            <b>SAANS</b><small>Air Quality Intelligence</small>
+          </div>
+          <button className="search-trigger" onClick={() => setCmd(true)}>
+            <span className="st-ic">⌕</span>
+            <span className="st-loc"><i style={{ background: cat.color }} />{loc.name}{loc.country ? `, ${loc.country}` : ''}</span>
+            <span className="st-hint">Search any place…</span>
+            <kbd>⌘K</kbd>
+          </button>
+          <button className="icon-btn" onClick={locate} title="Use my location">◎</button>
+          <Clock tz={aq?.tz} />
+          <div className="live"><i />LIVE</div>
+        </header>
 
-      <nav className="tabs">
-        {TABS.map(([k, ic, l]) => <button key={k} className={tab === k ? 'on' : ''} onClick={() => go(k)}><span>{ic}</span>{l}</button>)}
-      </nav>
+        {ticker.length > 0 && (
+          <div className="ticker"><div className="ticker-in">
+            {[...ticker, ...ticker].map((p, i) => (
+              <span key={i} onClick={() => pick(p)}><i style={{ background: category(p.us_aqi).color }} />{p.name} <b style={{ color: category(p.us_aqi).color }}>{p.us_aqi}</b></span>
+            ))}
+          </div></div>
+        )}
 
-      <main>
-        {loading && !aq && <Loader />}
-        <ErrorBox error={err} onRetry={() => setRefreshKey((k) => k + 1)} />
-        <Suspense fallback={<Loader text="Loading module…" />}>
-          {tab === 'world' && <World world={world} worldErr={worldErr} loc={loc} aq={aq} onPick={pick} />}
-          {tab === 'map' && <MapView loc={loc} world={world} onPick={pick} />}
-          {tab === 'health' && <Health aq={aq} />}
-          {tab === 'compare' && <Compare loc={loc} />}
-          {tab === 'history' && <History loc={loc} />}
-          {tab === 'alerts' && <Alerts loc={loc} notify={notify} />}
-          {aq && <>
-            {tab === 'overview' && <Dashboard loc={loc} aq={aq} wx={wx} station={station} onShare={() => setShare(true)} go={go} />}
-            {tab === 'forecast' && <Forecast loc={loc} aq={aq} wx={wx} />}
-            {tab === 'assistant' && <Assistant loc={loc} aq={aq} wx={wx} station={station} />}
-            {share && <ShareCard loc={loc} aq={aq} onClose={() => setShare(false)} />}
-          </>}
-        </Suspense>
-      </main>
+        <main key={tab} className="page">
+          {head && <PageHead kicker={head[0]} title={head[1]} sub={head[2].replace('{city}', loc.name)} />}
+          {loading && !aq && <Loader />}
+          <ErrorBox error={err} onRetry={() => setRefreshKey((k) => k + 1)} />
+          <Suspense fallback={<Loader text="Loading module…" />}>
+            {tab === 'world' && <World world={world} worldErr={worldErr} loc={loc} aq={aq} onPick={pick} />}
+            {tab === 'map' && <MapView loc={loc} world={world} onPick={pick} />}
+            {tab === 'health' && <Health aq={aq} />}
+            {tab === 'compare' && <Compare loc={loc} />}
+            {tab === 'history' && <History loc={loc} />}
+            {tab === 'alerts' && <Alerts loc={loc} notify={notify} />}
+            {aq && <>
+              {tab === 'overview' && <Dashboard loc={loc} aq={aq} wx={wx} station={station} onShare={() => setShare(true)} go={go} />}
+              {tab === 'forecast' && <Forecast loc={loc} aq={aq} wx={wx} />}
+              {tab === 'assistant' && <Assistant loc={loc} aq={aq} wx={wx} station={station} />}
+              {share && <ShareCard loc={loc} aq={aq} onClose={() => setShare(false)} />}
+            </>}
+          </Suspense>
+        </main>
 
-      <footer>
-        <p><b>Data sources:</b> <a href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noreferrer">Open-Meteo Air Quality API</a> (Copernicus Atmosphere Monitoring Service, CAMS — modelled estimates & forecasts) ·{' '}
-          <a href="https://aqicn.org/api/" target="_blank" rel="noreferrer">World Air Quality Index Project (WAQI)</a> (ground-station measurements) ·{' '}
-          <a href="https://open-meteo.com/en/docs" target="_blank" rel="noreferrer">Open-Meteo Weather & Geocoding</a> · <a href="https://www.bigdatacloud.com" target="_blank" rel="noreferrer">BigDataCloud</a> reverse geocoding · Map © OpenStreetMap, CARTO.</p>
-        <p className="muted xs">SAANS never fabricates readings. Model estimates, ground measurements, forecasts and ML predictions are always labelled. Health guidance is general information, not medical advice. Built for the Let's Code Diwali Challenge 2026 🪔</p>
-      </footer>
+        <footer className="foot">
+          <div className="foot-mega">BREATHE<br /><span>BETTER.</span></div>
+          <div className="foot-cols">
+            <div>
+              <h4>SAANS 🪔</h4>
+              <p>Real-time air quality intelligence that turns raw atmospheric data into decisions you can act on — built for the Let's Code Diwali Challenge 2026.</p>
+            </div>
+            <div>
+              <h4>Data sources</h4>
+              <a href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noreferrer">Open-Meteo Air Quality · Copernicus CAMS</a>
+              <a href="https://aqicn.org/api/" target="_blank" rel="noreferrer">WAQI · World Air Quality Index</a>
+              <a href="https://open-meteo.com/en/docs" target="_blank" rel="noreferrer">Open-Meteo Weather & Geocoding</a>
+              <a href="https://www.bigdatacloud.com" target="_blank" rel="noreferrer">BigDataCloud reverse geocoding</a>
+              <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">Map © OpenStreetMap · CARTO</a>
+            </div>
+            <div>
+              <h4>Explore</h4>
+              {TABS.map(([k, , l]) => <button key={k} onClick={() => go(k)}>{l}</button>)}
+            </div>
+            <div>
+              <h4>Honest data</h4>
+              <p>Measurements, model estimates, forecasts and ML predictions are always labelled. Nothing is fabricated. Health guidance is general information, not medical advice.</p>
+            </div>
+          </div>
+          <div className="foot-bar"><span>© 2026 SAANS</span><span>Made with ❤️ & 🪔 for cleaner air</span></div>
+        </footer>
+      </div>
 
+      <CommandPalette open={cmd} onClose={() => setCmd(false)} onPick={pick} onLocate={locate} world={world} />
       <div className="toasts">{toasts.map((t) => <div key={t.id} className="toast"><b>{t.title}</b><span>{t.body}</span></div>)}</div>
     </div>
   )
+}
+
+function Clock({ tz }) {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => { const i = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(i) }, [])
+  return <div className="clock">{now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: tz || undefined })}<small>{tz?.split('/').pop()?.replace('_', ' ') || 'local'}</small></div>
 }
