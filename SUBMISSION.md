@@ -1,6 +1,7 @@
 # SAANS — Submission kit (copy-paste into the form)
 
-Submit at: https://forms.gle/TJRqJBeieJwbQMHx9 (deadline **10 Nov 2026, 11:59 PM**)
+Submit at: https://forms.gle/8ck7stXe8W61U2t88 (problem-statement doc) — the challenge post links https://forms.gle/TJRqJBeieJwbQMHx9; if unsure submit to the doc form and mention it to letscode@lets-code.co.in.
+Deadline per doc: **9 Nov 2026, 11:59 PM** (post says 10 Nov — don't risk it, submit tonight).
 
 ---
 
