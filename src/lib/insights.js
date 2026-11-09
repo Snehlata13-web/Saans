@@ -61,7 +61,7 @@ export function contextFor(aq, wx, station, loc) {
       return { source: aq.source, time: fmtTime(c.t, aq.tz), indiaNAQI: c.in_aqi, usAQI: c.epa_aqi, dominantPollutant: c.dominant,
         pm2_5: c.pm2_5, pm10: c.pm10, no2: c.nitrogen_dioxide, so2: c.sulphur_dioxide, co: c.carbon_monoxide, o3: c.ozone, units: 'µg/m³' }
     })(),
-    groundStation: station && !station.error ? { station: station.station, aqi: station.aqi, time: station.time, dominant: station.dominant } : null,
+    groundStation: station && !station.error ? { station: station.station, usAQI_measured: station.aqi, time: station.time, dominant: station.dominant } : null,
     last24hAverages: Object.fromEntries(Object.entries(s.avgs).map(([k, v]) => [k, round(v, 1)])),
     indiaNAQI24hAvg: s.naqi?.value, indiaNAQINow: naqiNow(aq.current || {})?.value, cigarettesPerDay: round(s.cig, 1),
     scaleInUse: scaleName(),
