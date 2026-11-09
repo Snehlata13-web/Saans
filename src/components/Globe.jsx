@@ -86,13 +86,16 @@ function CameraFocus({ target }) {
   const { camera } = useThree()
   const goal = useRef(null)
   useEffect(() => {
-    if (target) goal.current = latLonToVec(target.lat, target.lon, 5.6)
+    if (target) goal.current = latLonToVec(target.lat, target.lon, 6.6)
   }, [target?.lat, target?.lon])
   useFrame(() => {
     if (!goal.current) return
-    camera.position.lerp(goal.current, 0.05)
+    // move along the sphere (never through the Earth), easing direction and distance separately
+    const len = camera.position.length()
+    const dir = camera.position.clone().normalize().lerp(goal.current.clone().normalize(), 0.06).normalize()
+    camera.position.copy(dir.multiplyScalar(len + (goal.current.length() - len) * 0.06))
     camera.lookAt(0, 0, 0)
-    if (camera.position.distanceTo(goal.current) < 0.02) goal.current = null
+    if (camera.position.distanceTo(goal.current) < 0.05) goal.current = null
   })
   return null
 }
@@ -100,7 +103,7 @@ function CameraFocus({ target }) {
 export default function Globe({ points = [], onSelect, selected, focus, height = 520, autoRotate = true }) {
   return (
     <div className="globe-wrap" style={{ height }}>
-      <Canvas camera={{ position: [0, 1.5, 5.8], fov: 45 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>
+      <Canvas camera={{ position: [0, 1.5, 6.6], fov: 45 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>
         <ambientLight intensity={0.35} />
         <directionalLight position={[5, 3, 5]} intensity={1.6} color="#bfe3ff" />
         <pointLight position={[-6, -2, -4]} intensity={30} color="#ff7a18" />

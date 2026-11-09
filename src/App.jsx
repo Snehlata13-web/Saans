@@ -238,7 +238,7 @@ export default function App() {
               <a href="https://aqicn.org/api/" target="_blank" rel="noreferrer">WAQI · World Air Quality Index</a>
               <a href="https://open-meteo.com/en/docs" target="_blank" rel="noreferrer">Open-Meteo Weather & Geocoding</a>
               <a href="https://www.bigdatacloud.com" target="_blank" rel="noreferrer">BigDataCloud reverse geocoding</a>
-              <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">Map © OpenStreetMap · CARTO</a>
+              <a href="https://www.esri.com" target="_blank" rel="noreferrer">Map tiles © Esri · OpenStreetMap</a>
             </div>
             <div>
               <h4>Explore</h4>

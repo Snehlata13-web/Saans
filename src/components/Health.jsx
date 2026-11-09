@@ -66,6 +66,19 @@ export default function Health({ aq }) {
         {aq?.current && <p className="sm">Right now: PM2.5 <b>{round(aq.current.pm2_5, 1)}</b> · PM10 <b>{round(aq.current.pm10, 1)}</b> µg/m³ <span className="muted">(model estimate)</span></p>}
       </Card>
 
+      <Card className="span3" title="India NAQI vs US AQI — why the numbers differ" icon="🇮🇳">
+        <p className="sm muted">The same air gives different numbers on different scales. Indian apps and CPCB use the <b>National AQI</b>, while many global apps use the <b>US EPA AQI</b>. At PM2.5 = 130 µg/m³, India shows ~308 (Very Poor) and the US scale shows ~205 (Very Unhealthy). Use the 🇮🇳/🇺🇸 switch in the top bar.</p>
+        <table className="tbl">
+          <thead><tr><th>PM2.5 (µg/m³)</th><th>India NAQI (CPCB)</th><th>US AQI (EPA 2024)</th></tr></thead>
+          <tbody>
+            {[[15, 'Good (25)', 'Moderate (62)'], [45, 'Satisfactory (75)', 'Sensitive (124)'], [75, 'Moderate (150)', 'Unhealthy (165)'], [110, 'Poor (267)', 'Unhealthy (189)'], [180, 'Very Poor (346)', 'Very Unhealthy (255)'], [300, 'Severe (438)', 'Hazardous (449)']].map(([c, a, b]) => (
+              <tr key={c}><td><b>{c}</b></td><td>{a}</td><td>{b}</td></tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="xs muted">CPCB's official bulletin uses 24-hour averages; SAANS also shows the live (latest-hour) value. Sources: CPCB National Air Quality Index (2014), US EPA AQI Technical Assistance Document (2024).</p>
+      </Card>
+
       <Card className="span3" title="Pollutant guide" icon="📚">
         <div className="pol-guide">{POLLUTANTS.map((x) => <div key={x.key}><b>{x.label}</b><p className="sm">{x.desc}</p><small className="muted">WHO guideline: {x.who} {x.unit}</small></div>)}</div>
       </Card>

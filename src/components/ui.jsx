@@ -121,5 +121,5 @@ export function ErrorBox({ error, onRetry }) {
 
 export function AqiChip({ v, color }) {
   const c = color ? { color } : category(v)
-  return <span className="chip" style={{ background: c.color + '22', color: c.color, borderColor: c.color + '66' }}>{v ?? '—'}</span>
+  return <span className="chip" style={{ background: c.color + '22', color: c.color, borderColor: c.color + '66' }}>{v == null ? '—' : v > 500 ? '500+' : v}</span>
 }

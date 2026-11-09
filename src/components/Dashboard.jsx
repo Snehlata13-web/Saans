@@ -107,7 +107,7 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
           </div>
           <p className="lede">{cat.meaning} <span>{cat.general}</span></p>
           {useCp ? (() => { const h = [...cp.stations].sort((a, b) => b.aqi - a.aqi)[0]; return <p className="sm hotspot">🔥 Worst CPCB station: <b>{h.name.split(',')[0]}</b> — NAQI {h.aqi} ({h.dominant})</p> })()
-            : hot && net.length > 1 && <p className="sm hotspot">🔥 Hotspot right now: <b>{hot.name?.split(',')[0]}</b> — US AQI {hot.aqi} <span className="muted xs">(measured {fmtTime(hot.time)})</span></p>}
+            : hot && net.length > 1 && <p className="sm hotspot">🔥 Hotspot right now: <b>{hot.name?.split(',')[0]}</b> — US AQI {hot.aqi > 500 ? '500+' : hot.aqi} <span className="muted xs">(measured {fmtTime(hot.time)})</span></p>}
           {!useSt && !IN && net && <p className="xs muted">No ground station within 25 km reported in the last 3 hours — showing the Copernicus CAMS model estimate, which can under-estimate local hotspots.</p>}
           {c.us_aqi >= 500 && !useSt && <p className="warn sm">⚠️ Model shows an extreme event at the top of the AQI scale (e.g. a modelled dust storm, PM10 {round(c.pm10)} µg/m³). Dust models can over-estimate.</p>}
           <div className="facts">

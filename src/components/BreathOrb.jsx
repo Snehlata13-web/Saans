@@ -80,7 +80,7 @@ function Orbiters({ items }) {
               <sphereGeometry args={[0.06, 16, 16]} />
               <meshBasicMaterial color={it.color} toneMapped={false} />
             </mesh>
-            <Html center distanceFactor={8} zIndexRange={[5, 0]} style={{ pointerEvents: 'none' }}>
+            <Html center distanceFactor={6} zIndexRange={[5, 0]} style={{ pointerEvents: 'none' }}>
               <div className="orbit-chip" style={{ '--c': it.color }}><b>{it.label}</b><span>{it.value}</span></div>
             </Html>
           </group>

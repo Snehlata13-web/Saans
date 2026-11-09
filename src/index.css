@@ -347,7 +347,7 @@ kbd { font-family: var(--mono); font-size: .7rem; padding: 4px 8px; border-radiu
 .ph-sub { color: #a6afcf; max-width: 720px; font-size: 1.05rem; line-height: 1.6; margin: 0; }
 
 /* ---------- hero ---------- */
-.hero { position: relative; display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; min-height: calc(100vh - 150px); gap: 10px; margin-top: -10px; }
+.hero { position: relative; display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; min-height: min(calc(100vh - 150px), 860px); gap: 10px; margin-top: -10px; }
 .hero-l { position: relative; z-index: 3; }
 .mega { font-family: var(--disp); font-weight: 800; font-size: clamp(2.8rem, 6.6vw, 6.6rem); line-height: .95; letter-spacing: -.03em; margin: 18px 0 10px; background: linear-gradient(100deg, #ffffff 20%, color-mix(in srgb, var(--cat) 70%, #fff) 70%, var(--cat)); -webkit-background-clip: text; background-clip: text; color: transparent; word-break: break-word; animation: megaIn 1s cubic-bezier(.2,.8,.2,1); }
 @keyframes megaIn { from { opacity: 0; letter-spacing: .1em; filter: blur(12px); } }
@@ -446,7 +446,7 @@ kbd { font-family: var(--mono); font-size: .7rem; padding: 4px 8px; border-radiu
 
 /* ---------- footer ---------- */
 .foot { margin-top: 120px; padding: 60px 0 30px; border-top: 1px solid var(--line); position: relative; overflow: hidden; }
-.foot-mega { font-family: var(--disp); font-weight: 900; font-size: clamp(3.5rem, 12vw, 11rem); line-height: .88; letter-spacing: -.04em; color: transparent; -webkit-text-stroke: 1.5px rgba(255,255,255,.18); user-select: none; }
+.foot-mega { font-family: var(--disp); font-weight: 900; font-size: clamp(3.5rem, 12vw, 11rem); line-height: .88; letter-spacing: -.04em; color: rgba(255,255,255,.06); user-select: none; }
 .foot-mega span { background: linear-gradient(90deg, #ffd27a, #ff7a3d, #ff4d6d, #b56cff); -webkit-background-clip: text; background-clip: text; -webkit-text-stroke: 0; }
 .foot-cols { display: grid; grid-template-columns: 1.3fr 1fr .8fr 1.2fr; gap: 40px; margin-top: 50px; }
 .foot-cols h4 { font-family: var(--mono); font-size: .72rem; letter-spacing: .25em; text-transform: uppercase; color: #ffc46b; margin-bottom: 14px; }
@@ -492,3 +492,5 @@ kbd { font-family: var(--mono); font-size: .7rem; padding: 4px 8px; border-radiu
 .st-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; max-height: 330px; overflow: auto; }
 .st-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.035); }
 .st-n { display: flex; flex-direction: column; font-size: .86rem; } .st-n small { color: var(--mut); font-size: .7rem; }
+
+.sizes { gap: 46px; }

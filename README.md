@@ -2,11 +2,17 @@
 
 > **SAANS** (साँस) means *breath*. SAANS turns raw, real-world air-quality data into a living, 3D, actionable experience — so people can understand the air they breathe and decide what to do about it.
 
-Built for the **Let's Code Diwali Challenge 2026 — Breathe Better**.
+Built for the **Let's Code Diwali Challenge 2026 — Breathe Better**. 🇮🇳 Shows both **India NAQI (CPCB)** and **US EPA AQI**.
 
 **Live demo:** `<your-vercel-url>` · **Demo video:** `<your-video-link>`
 
-![screenshot](docs/screenshot-dashboard.png)
+![SAANS dashboard](docs/overview.png)
+
+| 3D Globe | Live map | History + Diwali effect |
+|---|---|---|
+| ![](docs/world.png) | ![](docs/map.png) | ![](docs/history.png) |
+| **Forecast + ML** | **Compare** | **Health** |
+| ![](docs/forecast.png) | ![](docs/compare.png) | ![](docs/health.png) |
 
 ---
 
@@ -92,7 +98,7 @@ No keys? Everything still works with Open-Meteo; the ground-station card and LLM
 ## ☁️ Deploy (Vercel)
 
 1. Push to GitHub → **Import** in Vercel (framework: Vite, auto-detected).
-2. Add env vars `WAQI_TOKEN` (free at https://aqicn.org/data-platform/token) and optionally `GROQ_API_KEY`.
+2. (Optional) add env vars `WAQI_TOKEN`, `DATAGOV_API_KEY`, `GROQ_API_KEY`. The app works fully without them.
 3. Deploy. `/api/*.js` become serverless functions automatically.
 
 ## ⚠️ Disclaimer

@@ -9,8 +9,9 @@ const DIRS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
 export default function World({ world, worldErr, loc, aq, onPick }) {
   const [scope, setScope] = useState('all')
   const [sel, setSel] = useState(null)
+  const [worst, setWorst] = useState(true)
   const list = world.filter((p) => p.us_aqi != null && (scope === 'all' || (scope === 'in' ? p.in : !p.in)))
-  const ranked = [...list].sort((a, b) => a.us_aqi - b.us_aqi)
+  const ranked = [...list].sort((a, b) => (worst ? b.us_aqi - a.us_aqi : a.us_aqi - b.us_aqi))
   return (
     <div className="grid world">
       <Card className="span2 globe-card" title="Live 3D pollution globe" icon="🌍" right={<Tag kind="model">Pillar height = AQI · rings = hotspots</Tag>}>
@@ -25,7 +26,7 @@ export default function World({ world, worldErr, loc, aq, onPick }) {
           </div>
         )}
       </Card>
-      <Card title="Pollution leaderboard" icon="🏆" right={<div className="seg mini">{[['all', 'All'], ['in', 'India'], ['w', 'World']].map(([k, l]) => <button key={k} className={scope === k ? 'on' : ''} onClick={() => setScope(k)}>{l}</button>)}</div>}>
+      <Card title="Pollution leaderboard" icon="🏆" right={<div className="seg mini"><button className="on" onClick={() => setWorst(!worst)}>{worst ? '🔥 Worst' : '🌿 Cleanest'}</button>{[['all', 'All'], ['in', 'India'], ['w', 'World']].map(([k, l]) => <button key={k} className={scope === k ? 'on' : ''} onClick={() => setScope(k)}>{l}</button>)}</div>}>
         {world.length === 0 && <Loader text="Ranking cities…" />}
         <ol className="lb">
           {ranked.map((p, i) => (
@@ -37,7 +38,7 @@ export default function World({ world, worldErr, loc, aq, onPick }) {
             </li>
           ))}
         </ol>
-        {world[0] && <p className="muted xs">Cleanest first · updated {fmtTime(world[0].t)} · Open-Meteo CAMS</p>}
+        {world[0] && <p className="muted xs">{worst ? 'Most polluted' : 'Cleanest'} first · US AQI · updated {fmtTime(world[0].t)} · Open-Meteo CAMS</p>}
       </Card>
       <CleanAirFinder loc={loc} aq={aq} onPick={onPick} />
     </div>

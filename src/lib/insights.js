@@ -1,4 +1,4 @@
-import { avg, category, cigarettes, computeNAQI, POLLUTANTS, round, fmtTime, fmtHour } from './aqi'
+import { avg, category, cigarettes, computeNAQI, naqiNow, POLLUTANTS, round, fmtTime, fmtHour } from './aqi'
 import { bestWindow, pctChange } from './analytics'
 
 export function last24(aq) {
@@ -59,7 +59,7 @@ export function contextFor(aq, wx, station, loc) {
     modelEstimate: { source: aq.source, time: fmtTime(aq.current?.t, aq.tz), ...aq.current },
     groundStation: station && !station.error ? { station: station.station, aqi: station.aqi, time: station.time, dominant: station.dominant } : null,
     last24hAverages: Object.fromEntries(Object.entries(s.avgs).map(([k, v]) => [k, round(v, 1)])),
-    indiaNAQI: s.naqi?.value, cigarettesPerDay: round(s.cig, 1),
+    indiaNAQI24hAvg: s.naqi?.value, indiaNAQINow: naqiNow(aq.current || {})?.value, cigarettesPerDay: round(s.cig, 1),
     forecastNext48h: aq.forecast.slice(0, 48).filter((_, i) => i % 3 === 0).map((r) => ({ time: fmtTime(r.t, aq.tz), us_aqi: r.us_aqi, pm2_5: r.pm2_5 })),
     weather: wx?.current,
   }

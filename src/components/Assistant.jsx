@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Card, Tag } from './ui'
-import { category, round, POLLUTANTS, fmtHour } from '../lib/aqi'
+import { category, round, POLLUTANTS, fmtHour, naqiNow, naqiCategory } from '../lib/aqi'
 import { insights, contextFor } from '../lib/insights'
 
 const SUGGEST = ['Is it safe to go for a run now?', 'Should my kids play outside?', 'When is the best time to go out today?', 'What is PM2.5?', 'Will air get worse tomorrow?', 'Kya mujhe mask pehenna chahiye?']
@@ -11,7 +11,10 @@ function localAnswer(q, { aq, wx, loc }) {
   const cat = category(c.us_aqi)
   const { s } = insights(aq, wx, loc.name)
   const tf = (x) => fmtHour(x, aq.tz)
-  const head = `${loc.name}: US AQI ${c.us_aqi ?? '—'} (${cat.label}, model estimate).`
+  const nq = naqiNow(c)
+  const head = /india/i.test(loc.country || '') && nq
+    ? `${loc.name}: India NAQI ${nq.value} (${naqiCategory(nq.value).label}) · US AQI ${c.us_aqi ?? '—'} (${cat.label}) — model estimate.`
+    : `${loc.name}: US AQI ${c.us_aqi ?? '—'} (${cat.label}, model estimate).`
   if (/run|jog|exercise|walk|gym|cycle|sport|workout|daud|sair/.test(t))
     return `${head} ${cat.activity}${s.best ? ` The cleanest 2-hour window in the next 48h is around ${tf(s.best.start)} (forecast AQI ≈ ${round(s.best.aqi)}).` : ''}`
   if (/kid|child|baby|school|bachch/.test(t)) return `${head} ${c.us_aqi > 100 ? 'Children are more vulnerable — keep play indoors today and avoid traffic-heavy routes.' : 'Outdoor play is fine today.'} ${cat.sensitive}`

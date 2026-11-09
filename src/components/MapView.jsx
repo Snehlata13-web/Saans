@@ -34,7 +34,7 @@ export default function MapView({ loc, world, onPick }) {
 
   const onMove = async (b, z) => {
     const s = b.getSouth(), n = b.getNorth(), w = b.getWest(), e = b.getEast()
-    const N = 7
+    const N = 8
     const pts = []
     for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
       const lat = s + ((i + 0.5) * (n - s)) / N, lon = w + ((j + 0.5) * (e - w)) / N
@@ -73,10 +73,11 @@ export default function MapView({ loc, world, onPick }) {
         {msg && <span className="warn xs">{msg}</span>}
       </div>
       <MapContainer center={[loc.lat, loc.lon]} zoom={5} className="map" worldCopyJump preferCanvas>
-        <TileLayer attribution='&copy; OpenStreetMap &copy; CARTO' url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+        <TileLayer attribution='Tiles &copy; Esri — Esri, HERE, Garmin, &copy; OpenStreetMap contributors' url="https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}" maxZoom={16} />
+        <TileLayer url="https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}" maxZoom={16} zIndex={650} pane="overlayPane" />
         <Events onMove={onMove} onClick={onClick} />
         <FlyTo loc={loc} />
-        <Pane name="heat" style={{ zIndex: 350, filter: 'blur(18px)', opacity: 0.75 }}>
+        <Pane name="heat" style={{ zIndex: 350, filter: 'blur(32px) saturate(1.3)', opacity: 0.8 }}>
           {heat && grid.map((g, i) => g.us_aqi != null && (
             <Rectangle key={i} bounds={[[g.lat - g.dLat / 2, g.lon - g.dLon / 2], [g.lat + g.dLat / 2, g.lon + g.dLon / 2]]}
               pathOptions={{ stroke: false, fillColor: category(g.us_aqi).color, fillOpacity: 0.55 }} interactive={false} />
