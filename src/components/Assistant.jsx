@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Card, Tag } from './ui'
-import { category, usCategory, round, POLLUTANTS, fmtHour, naqiNow, naqiCategory } from '../lib/aqi'
+import { category, usCategory, round, POLLUTANTS, fmtHour, naqiNow, naqiCategory, scaleName } from '../lib/aqi'
 import { insights, contextFor } from '../lib/insights'
 
 const SUGGEST = ['Is it safe to go for a run now?', 'Should my kids play outside?', 'When is the best time to go out today?', 'What is PM2.5?', 'Will air get worse tomorrow?', 'Kya mujhe mask pehenna chahiye?']
@@ -94,20 +94,53 @@ export default function Assistant({ aq, wx, station, loc }) {
     r.start(); setListening(true)
   }
 
+  const c = aq.current || {}
+  const cat = category(c.us_aqi)
+  const TILES = [['🏃', 'Is it safe to go for a run now?'], ['🧒', 'Should my kids play outside?'], ['⏰', 'When is the best time to go out today?'], ['🔬', 'What is PM2.5?'], ['🔮', 'Will air get worse tomorrow?'], ['😷', 'Kya mujhe mask pehenna chahiye?']]
+  const fresh = msgs.length === 1
   return (
-    <div className="grid">
-      <Card className="span3 chat" title="SAANS AI — your air-quality assistant" icon="🤖" right={<div className="tags"><Tag kind="model">Grounded on live data</Tag><span className="muted xs">mode: {mode}</span></div>}>
+    <div className="grid ai-grid">
+      <Card className="span2 chat" title="SAANS AI" icon="✦" right={<div className="tags"><Tag kind="model">Grounded on live data</Tag><span className="mode-pill">{mode === '…' ? 'ready' : mode}</span></div>}>
         <div className="msgs" ref={box}>
-          {msgs.map((m, i) => <div key={i} className={'msg ' + m.role}>{m.content}</div>)}
-          {busy && <div className="msg assistant typing"><i /><i /><i /></div>}
+          {msgs.map((m, i) => (
+            <div key={i} className={'row ' + m.role}>
+              {m.role === 'assistant' && <span className="av">🪔</span>}
+              <div className={'msg ' + m.role}>{m.content}</div>
+            </div>
+          ))}
+          {busy && <div className="row assistant"><span className="av">🪔</span><div className="msg assistant typing"><i /><i /><i /></div></div>}
+          {fresh && (
+            <div className="tiles">
+              {TILES.map(([e, t]) => <button key={t} className="tile tilt" onClick={() => ask(t)}><span>{e}</span>{t}</button>)}
+            </div>
+          )}
         </div>
-        <div className="sugg">{SUGGEST.map((s) => <button key={s} onClick={() => ask(s)}>{s}</button>)}</div>
+        {!fresh && <div className="sugg">{SUGGEST.map((x) => <button key={x} onClick={() => ask(x)}>{x}</button>)}</div>}
         <form className="chat-in" onSubmit={(e) => { e.preventDefault(); ask(q) }}>
           <button type="button" className={'mic' + (listening ? ' on' : '')} onClick={mic} title="Voice input">🎙️</button>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={listening ? 'Listening…' : 'Ask about the air… (English / Hinglish)'} />
-          <label className="xs muted"><input type="checkbox" checked={speak} onChange={(e) => { setSpeak(e.target.checked); localStorage.setItem('saans:speak', e.target.checked ? '1' : '0'); if (!e.target.checked) window.speechSynthesis?.cancel() }} /> 🔊 read answers aloud</label>
-          <button className="btn glow" disabled={busy}>Send</button>
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={listening ? 'Listening… speak now' : `Ask anything about the air in ${loc.name}…`} />
+          <button className="btn glow send" disabled={busy}>Send ↑</button>
         </form>
+        <label className="xs muted speak-t"><input type="checkbox" checked={speak} onChange={(e) => { setSpeak(e.target.checked); localStorage.setItem('saans:speak', e.target.checked ? '1' : '0'); if (!e.target.checked) window.speechSynthesis?.cancel() }} /> 🔊 read answers aloud</label>
+      </Card>
+      <Card className="ctx-card glowborder" title="What I'm looking at" icon="📡">
+        <div className="ctx-aqi" style={{ '--c': cat.color }}>
+          <b>{c.us_aqi ?? '—'}</b>
+          <div><span>{scaleName()}</span><em>{cat.emoji} {cat.label}</em></div>
+        </div>
+        <ul className="ctx-list">
+          <li><span>PM2.5</span><b>{round(c.pm2_5, 1)} µg/m³</b></li>
+          <li><span>PM10</span><b>{round(c.pm10, 1)} µg/m³</b></li>
+          <li><span>NO₂</span><b>{round(c.nitrogen_dioxide, 1)} µg/m³</b></li>
+          {wx?.current && <li><span>Wind</span><b>{round(wx.current.wind_speed_10m)} km/h</b></li>}
+          {wx?.current && <li><span>Humidity</span><b>{wx.current.relative_humidity_2m}%</b></li>}
+          {station && !station.error && <li><span>Nearest station</span><b>US {station.aqi > 500 ? '500+' : station.aqi}</b></li>}
+        </ul>
+        <div className="ctx-can">
+          <div className="xs muted">I can help with</div>
+          <span>🏃 Outdoor plans</span><span>🩺 Health advice</span><span>🔮 Forecasts</span><span>🪔 Diwali smoke</span><span>🇮🇳 Hinglish</span><span>🎙️ Voice</span>
+        </div>
+        <p className="xs muted">Answers use only these live numbers (Open-Meteo CAMS model + WAQI stations). Not medical advice.</p>
       </Card>
     </div>
   )

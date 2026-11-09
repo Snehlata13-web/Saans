@@ -575,3 +575,41 @@ kbd { font-family: var(--mono); font-size: .7rem; padding: 4px 8px; border-radiu
 .lede { font-size: 1rem; margin-top: 18px; }
 .facts { margin: 20px 0; }
 .aqi-mega { font-size: clamp(5.5rem, 13vw, 12rem); }
+
+/* ---------- AI page v2 ---------- */
+.ai-grid { align-items: stretch; }
+.chat { display: flex; flex-direction: column; }
+.chat .msgs { flex: 1; height: 58vh; min-height: 420px; padding: 8px 4px 16px; gap: 14px; }
+.row { display: flex; gap: 10px; align-items: flex-end; animation: rise .35s; }
+.row.user { justify-content: flex-end; }
+.av { width: 34px; height: 34px; flex-shrink: 0; display: grid; place-items: center; border-radius: 12px; background: radial-gradient(circle, rgba(255,159,28,.35), rgba(255,255,255,.04)); border: 1px solid rgba(255,200,120,.3); box-shadow: 0 0 18px rgba(255,159,28,.25); }
+.msg { max-width: 80%; font-size: .95rem; }
+.msg.assistant { background: linear-gradient(160deg, rgba(255,255,255,.08), rgba(255,255,255,.03)); border-color: rgba(255,255,255,.1); }
+.msg.user { box-shadow: 0 10px 30px rgba(255,90,80,.3); }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px auto 0; width: min(760px, 100%); }
+.tile { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; text-align: left; padding: 18px; border-radius: 20px; border: 1px solid var(--line); background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.015)); font-size: .9rem; font-weight: 500; }
+.tile span { font-size: 1.6rem; filter: drop-shadow(0 0 10px rgba(255,180,80,.4)); }
+.tile:hover { border-color: rgba(255,200,120,.45); }
+.chat-in { padding: 8px; border-radius: 22px; background: rgba(255,255,255,.04); border: 1px solid var(--line); }
+.chat-in:focus-within { border-color: color-mix(in srgb, var(--cat) 55%, transparent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--cat) 12%, transparent); }
+.chat-in input { border: 0; background: transparent; font-size: 1rem; }
+.mic { width: 48px; height: 48px; background: linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.03)); }
+.send { border-radius: 16px; }
+.speak-t { margin-top: 10px; display: block; }
+.mode-pill { font-family: var(--mono); font-size: .66rem; padding: 4px 9px; border-radius: 99px; background: rgba(255,255,255,.06); border: 1px solid var(--line); color: #cfd6ea; }
+.ctx-aqi { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: 20px; background: radial-gradient(circle at 20% 50%, color-mix(in srgb, var(--c) 25%, transparent), transparent 70%), rgba(255,255,255,.03); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
+.ctx-aqi b { font-family: var(--disp); font-size: 3.6rem; font-weight: 800; color: var(--c); text-shadow: 0 0 40px var(--c); line-height: 1; }
+.ctx-aqi div { display: flex; flex-direction: column; gap: 6px; } .ctx-aqi span { font-family: var(--mono); font-size: .7rem; letter-spacing: .15em; color: var(--mut); text-transform: uppercase; }
+.ctx-aqi em { font-style: normal; font-weight: 700; color: var(--c); }
+.ctx-list { list-style: none; padding: 0; margin: 16px 0; display: grid; gap: 6px; }
+.ctx-list li { display: flex; justify-content: space-between; padding: 9px 12px; border-radius: 12px; background: rgba(255,255,255,.03); font-size: .86rem; } .ctx-list span { color: var(--mut); }
+.ctx-can { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; } .ctx-can div { width: 100%; margin-bottom: 2px; }
+.ctx-can span { font-size: .76rem; padding: 5px 10px; border-radius: 99px; background: rgba(255,255,255,.05); border: 1px solid var(--line); }
+@media (max-width: 860px) { .tiles { grid-template-columns: 1fr 1fr; } }
+
+/* ---------- Alerts empty state ---------- */
+.alert-empty { display: grid; place-items: center; text-align: center; gap: 10px; padding: 30px 10px; }
+.alert-empty .bell { font-size: 3rem; animation: ring 2.6s ease-in-out infinite; transform-origin: top center; filter: drop-shadow(0 0 20px rgba(255,180,80,.5)); }
+@keyframes ring { 0%,60%,100% { transform: rotate(0); } 10% { transform: rotate(14deg); } 20% { transform: rotate(-12deg); } 30% { transform: rotate(8deg); } 40% { transform: rotate(-4deg); } }
+.notif-preview { width: 100%; max-width: 340px; text-align: left; padding: 12px 14px; border-radius: 16px; background: rgba(255,255,255,.06); border: 1px solid var(--line); box-shadow: 0 20px 40px rgba(0,0,0,.35); display: grid; gap: 4px; font-size: .82rem; }
+.notif-preview small { color: var(--mut); font-family: var(--mono); font-size: .62rem; letter-spacing: .1em; }

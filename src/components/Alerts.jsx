@@ -36,7 +36,15 @@ export default function Alerts({ loc, notify }) {
         <p className="xs muted">Notifications: <b>{perm}</b>{perm === 'denied' && ' — enable them in your browser site settings. In-app alerts still work.'}</p>
       </Card>
       <Card title="Your alerts" icon="📋" right={<button className="btn sm" onClick={test} disabled={busy}>{busy ? 'Checking…' : 'Check now'}</button>}>
-        {alerts.length === 0 && <p className="muted">No alerts yet.</p>}
+        {alerts.length === 0 && (
+          <div className="alert-empty">
+            <div className="bell">🔔</div>
+            <b>No alerts yet</b>
+            <p className="sm muted">Create one and you'll get a heads-up like this:</p>
+            <div className="notif-preview"><small>SAANS · NOW</small><b>⚠️ {target.name}: {scaleName()} crossed {th}</b><span className="muted">Crossed your threshold of {th} — wear an N95 outdoors.</span></div>
+            <p className="xs muted">Preview of the notification format.</p>
+          </div>
+        )}
         <ul className="alerts">
           {alerts.map((a) => (
             <li key={a.id}>
