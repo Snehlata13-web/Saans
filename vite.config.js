@@ -34,6 +34,18 @@ export default defineConfig(({ mode }) => {
   Object.assign(process.env, loadEnv(mode, process.cwd(), ''))
   return {
     plugins: [react(), localApi()],
-    build: { chunkSizeWarningLimit: 2000 },
+    build: {
+      chunkSizeWarningLimit: 2000,
+      target: 'es2020',
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return
+            if (/three|@react-three|three-stdlib|maath|troika|meshline/.test(id)) return 'three'
+            if (/react-dom|scheduler|\/react\//.test(id)) return 'react'
+          },
+        },
+      },
+    },
   }
 })

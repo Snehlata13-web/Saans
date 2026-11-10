@@ -1,12 +1,30 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import { LITE, DPR } from '../lib/perf'
+import { useActive } from '../lib/useActive'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Float, MeshDistortMaterial, Sparkles, Html } from '@react-three/drei'
 import * as THREE from 'three'
 
-// A breathing "air sample" — particle density scales with live PM2.5
+// A breathing "air sample" — particle density scales with live PM2.5. Motion runs in the vertex shader.
+const pVert = `
+uniform float uTime; uniform float uScale; attribute float aSeed;
+void main() {
+  vec3 p = position + vec3(sin(uTime * 0.6 + aSeed), cos(uTime * 0.5 + aSeed * 1.3), sin(uTime * 0.4 + aSeed * 0.7)) * 0.06;
+  vec4 mv = modelViewMatrix * vec4(p, 1.0);
+  gl_PointSize = 0.035 * uScale / -mv.z;
+  gl_Position = projectionMatrix * mv;
+}`
+const pFrag = `
+uniform vec3 uColor;
+void main() {
+  float d = length(gl_PointCoord - 0.5);
+  if (d > 0.5) discard;
+  gl_FragColor = vec4(uColor, 0.95 * smoothstep(0.5, 0.15, d));
+}`
+
 function Particles({ count, color }) {
   const ref = useRef()
-  const { pos, seed } = useMemo(() => {
+  const { geo, mat } = useMemo(() => {
     const pos = new Float32Array(count * 3), seed = new Float32Array(count)
     for (let i = 0; i < count; i++) {
       const r = 1.25 * Math.cbrt(Math.random())
@@ -14,28 +32,21 @@ function Particles({ count, color }) {
       pos.set([r * Math.sin(ph) * Math.cos(th), r * Math.sin(ph) * Math.sin(th), r * Math.cos(ph)], i * 3)
       seed[i] = Math.random() * 100
     }
-    return { pos, seed }
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+    geo.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1))
+    const mat = new THREE.ShaderMaterial({ vertexShader: pVert, fragmentShader: pFrag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      uniforms: { uTime: { value: 0 }, uScale: { value: 300 }, uColor: { value: new THREE.Color(color) } } })
+    return { geo, mat }
   }, [count])
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime
-    const a = ref.current.geometry.attributes.position
-    for (let i = 0; i < count; i++) {
-      const s = seed[i]
-      a.array[i * 3] = pos[i * 3] + Math.sin(t * 0.6 + s) * 0.06
-      a.array[i * 3 + 1] = pos[i * 3 + 1] + Math.cos(t * 0.5 + s * 1.3) * 0.06
-      a.array[i * 3 + 2] = pos[i * 3 + 2] + Math.sin(t * 0.4 + s * 0.7) * 0.06
-    }
-    a.needsUpdate = true
-    ref.current.rotation.y = t * 0.08
+  useEffect(() => { mat.uniforms.uColor.value.set(color) }, [color, mat])
+  useEffect(() => () => { geo.dispose(); mat.dispose() }, [geo, mat])
+  useFrame(({ clock, size, viewport }) => {
+    mat.uniforms.uTime.value = clock.elapsedTime
+    mat.uniforms.uScale.value = (size.height / 2) * viewport.dpr
+    ref.current.rotation.y = clock.elapsedTime * 0.08
   })
-  return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[pos.slice(), 3]} />
-      </bufferGeometry>
-      <pointsMaterial size={0.035} color={color} transparent opacity={0.95} sizeAttenuation toneMapped={false} blending={THREE.AdditiveBlending} depthWrite={false} />
-    </points>
-  )
+  return <points ref={ref} geometry={geo} material={mat} />
 }
 
 function Breather({ color, pm, inhale }) {
@@ -49,12 +60,12 @@ function Breather({ color, pm, inhale }) {
     g.current.rotation.y += (pointer.x * 0.6 - g.current.rotation.y) * 0.05
     g.current.rotation.x += (-pointer.y * 0.4 - g.current.rotation.x) * 0.05
   })
-  const count = Math.round(Math.min(2600, Math.max(40, (pm || 0) * 14)))
+  const count = Math.round(Math.min(LITE ? 900 : 2600, Math.max(40, (pm || 0) * (LITE ? 7 : 14))))
   return (
     <group ref={g}>
       <Float speed={1.2} rotationIntensity={0.3} floatIntensity={0.6}>
         <mesh>
-          <sphereGeometry args={[1.45, 64, 64]} />
+          <sphereGeometry args={[1.45, LITE ? 32 : 64, LITE ? 32 : 64]} />
           <MeshDistortMaterial color={color} distort={0.18} speed={1.6} transparent opacity={0.13} roughness={0.1} metalness={0.2} emissive={color} emissiveIntensity={0.25} />
         </mesh>
         <mesh>
@@ -95,15 +106,16 @@ function Orbiters({ items }) {
 }
 
 export default function BreathOrb({ color = '#2ee59d', pm = 10, height = 340, orbit, zoom = 5.2, inhale = false }) {
+  const [ref, active] = useActive()
   return (
-    <div className="orb-box" style={{ height, width: '100%' }}>
-      <Canvas camera={{ position: [0, 0, zoom], fov: 45 }} dpr={[1, 2]} gl={{ alpha: true, antialias: true }}>
+    <div ref={ref} className="orb-box" style={{ height, width: '100%' }}>
+      <Canvas camera={{ position: [0, 0, zoom], fov: 45 }} dpr={DPR} frameloop={active ? 'always' : 'never'} gl={{ alpha: true, antialias: !LITE, powerPreference: 'high-performance', stencil: false }}>
         <ambientLight intensity={0.6} />
         <pointLight position={[3, 3, 4]} intensity={40} color={color} />
         <pointLight position={[-4, -2, 2]} intensity={20} color="#ff9f1c" />
         <Breather color={color} pm={pm} inhale={inhale} />
         {orbit && <Orbiters items={orbit} />}
-        <Sparkles count={40} scale={6} size={2} speed={0.3} color="#ffd27a" />
+        {!LITE && <Sparkles count={40} scale={6} size={2} speed={0.3} color="#ffd27a" />}
       </Canvas>
     </div>
   )

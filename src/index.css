@@ -34,7 +34,7 @@ input, select { font: inherit; color: inherit; }
 @keyframes float { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(60px,-40px) scale(1.1); } 66% { transform: translate(-40px,50px) scale(.95); } }
 
 /* ---------- intro ---------- */
-.intro { position: fixed; inset: 0; z-index: 100; background: #04060f; display: grid; place-items: center; align-content: center; gap: 8px; animation: introOut .6s ease 2.1s forwards; }
+.intro { position: fixed; inset: 0; z-index: 100; background: #04060f; display: grid; place-items: center; align-content: center; gap: 8px; animation: introOut .5s ease 1.6s forwards; }
 .intro h1 { font-size: clamp(64px, 12vw, 150px); letter-spacing: .25em; background: linear-gradient(90deg, #ffd27a, #ff7a18, #ff4d6d, #b56cff); -webkit-background-clip: text; color: transparent; animation: breathe 2.2s ease-in-out; text-indent: .25em; }
 .intro p { color: var(--mut); letter-spacing: .3em; text-transform: uppercase; font-size: .8rem; }
 .intro p span { color: var(--gold); }
@@ -759,3 +759,26 @@ body.fx-cursor .leaflet-container, body.fx-cursor input[type=range] { cursor: no
 
 .marquee { margin-left: -150px; margin-right: -60px; }
 @media (max-width: 860px) { .marquee { margin-left: -20px; margin-right: -20px; } }
+
+/* =====================================================================
+   Performance
+   ===================================================================== */
+.cur-dot, .cur-ring, .bg i, .hero::before, .halo, .mq-in, .ticker-in { will-change: transform; }
+.page, .card { contain: layout style; }
+.backdrop { contain: strict; }
+/* Lite mode (phones / low-end / data-saver / reduced-motion): drop the expensive bits, keep the look */
+html.lite .card, html.lite .top, html.lite .dock, html.lite .map-tools, html.lite .legend, html.lite .hot-list, html.lite .timeline,
+html.lite .wx-pills span, html.lite .htb-btn, html.lite .htb-res, html.lite .btn, html.lite .toast, html.lite .cmdk { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+html.lite .card { background: linear-gradient(160deg, rgba(24,26,52,.96), rgba(12,14,30,.96)); }
+html.lite .top, html.lite .dock { background: rgba(10,12,28,.97); }
+html.lite .noise, html.lite .gridfx { display: none; }
+html.lite .bg i { animation: none; filter: blur(60px); }
+html.lite .hero::before { animation: none; filter: blur(40px); }
+html.lite .glowborder::before { animation: none; }
+html.lite .mega, html.lite .ph-title { animation: none; }
+html.lite .halo, html.lite .halo::after { animation: none; }
+html.lite .marquee { animation: none; }
+html.lite .card:hover { transform: none; }
+html.lite .tilt { transform: none !important; }
+html.lite .bento > *, html.lite .grid > .card { animation: none !important; }
+html.lite .pol:hover { transform: none; }

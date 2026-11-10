@@ -3,6 +3,8 @@ import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import { OrbitControls, Stars, Html } from '@react-three/drei'
 import * as THREE from 'three'
 import { category, hiThreshold, scaleName } from '../lib/aqi'
+import { LITE, DPR } from '../lib/perf'
+import { useActive } from '../lib/useActive'
 
 const R = 2
 export function latLonToVec(lat, lon, r = R) {
@@ -15,12 +17,12 @@ const atmoVert = `varying vec3 vN; void main(){ vN = normalize(normalMatrix*norm
 const atmoFrag = `uniform vec3 c; varying vec3 vN; void main(){ float i = pow(0.72 - dot(vN, vec3(0.0,0.0,1.0)), 3.0); gl_FragColor = vec4(c, 1.0) * i; }`
 
 function Earth() {
-  const [night, bump] = useLoader(THREE.TextureLoader, ['/earth-night.jpg', '/earth-topology.png'])
+  const [night, bump] = useLoader(THREE.TextureLoader, ['/earth-night.jpg', '/earth-topology.jpg'])
   night.colorSpace = THREE.SRGBColorSpace
   return (
     <group>
       <mesh>
-        <sphereGeometry args={[R, 96, 96]} />
+        <sphereGeometry args={[R, LITE ? 48 : 96, LITE ? 48 : 96]} />
         <meshStandardMaterial map={night} bumpMap={bump} bumpScale={0.04} emissiveMap={night} emissive="#ffffff" emissiveIntensity={0.9} roughness={1} metalness={0} />
       </mesh>
       <mesh scale={1.18}>
@@ -101,13 +103,14 @@ function CameraFocus({ target }) {
 }
 
 export default function Globe({ points = [], onSelect, selected, focus, height = 520, autoRotate = true }) {
+  const [ref, active] = useActive()
   return (
-    <div className="globe-wrap" style={{ height }}>
-      <Canvas camera={{ position: [0, 1.5, 6.6], fov: 45 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>
+    <div ref={ref} className="globe-wrap" style={{ height }}>
+      <Canvas camera={{ position: [0, 1.5, 6.6], fov: 45 }} dpr={DPR} frameloop={active ? 'always' : 'never'} gl={{ antialias: !LITE, alpha: true, powerPreference: 'high-performance' }}>
         <ambientLight intensity={0.35} />
         <directionalLight position={[5, 3, 5]} intensity={1.6} color="#bfe3ff" />
         <pointLight position={[-6, -2, -4]} intensity={30} color="#ff7a18" />
-        <Stars radius={60} depth={40} count={4000} factor={3} fade speed={0.6} />
+        <Stars radius={60} depth={40} count={LITE ? 1200 : 4000} factor={3} fade speed={0.6} />
         <Suspense fallback={null}>
           <Earth />
           {points.filter((p) => p.us_aqi != null).map((p) => (

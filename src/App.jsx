@@ -6,6 +6,7 @@ import { checkAlerts } from './lib/alerts'
 import Dashboard from './components/Dashboard'
 import CommandPalette from './components/CommandPalette'
 import { Cursor, Ripple } from './components/FX'
+import { LITE } from './lib/perf'
 import { Loader, ErrorBox, PageHead, Boundary } from './components/ui'
 
 const Backdrop = lazy(() => import('./components/Backdrop'))
@@ -71,7 +72,8 @@ export default function App() {
   const [worldErr, setWorldErr] = useState(null)
   const [share, setShare] = useState(false)
   const [toasts, setToasts] = useState([])
-  const [intro, setIntro] = useState(true)
+  const [intro, setIntro] = useState(() => !sessionStorage.getItem('saans:intro'))
+  const [fx, setFx] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [cmd, setCmd] = useState(false)
   const [scale, setScale] = useState(() => localStorage.getItem('saans:scale') || 'auto')
@@ -82,7 +84,10 @@ export default function App() {
     let lastTilt = null
     const k = (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmd((v) => !v) } }
     // spotlight effect: cards glow where the cursor is
-    const m = (e) => {
+    let pending = null, rafId = 0
+    const m = (ev) => { pending = ev; if (!rafId) rafId = requestAnimationFrame(() => { rafId = 0; apply(pending) }) }
+    const apply = (e) => {
+      if (LITE) return
       const c = e.target.closest?.('.card')
       if (c) {
         const r = c.getBoundingClientRect()
@@ -100,7 +105,7 @@ export default function App() {
     }
     window.addEventListener('keydown', k)
     window.addEventListener('pointermove', m, { passive: true })
-    return () => { window.removeEventListener('keydown', k); window.removeEventListener('pointermove', m) }
+    return () => { cancelAnimationFrame(rafId); window.removeEventListener('keydown', k); window.removeEventListener('pointermove', m) }
   }, [])
 
   const notify = useCallback((t) => {
@@ -154,7 +159,14 @@ export default function App() {
     return () => { clearTimeout(t); clearInterval(i) }
   }, [notify])
 
-  useEffect(() => { const t = setTimeout(() => setIntro(false), 2600); return () => clearTimeout(t) }, [])
+  useEffect(() => { if (!intro) return; sessionStorage.setItem('saans:intro', '1'); const t = setTimeout(() => setIntro(false), 2000); return () => clearTimeout(t) }, [])
+  // mount the full-screen WebGL backdrop only after the page is interactive (and never on Lite devices)
+  useEffect(() => {
+    if (LITE) return
+    const go = () => setFx(true)
+    const id = window.requestIdleCallback ? requestIdleCallback(go, { timeout: 2500 }) : setTimeout(go, 1200)
+    return () => (window.cancelIdleCallback ? cancelIdleCallback(id) : clearTimeout(id))
+  }, [])
 
   const locate = () => {
     if (!navigator.geolocation) return notify({ title: 'Location unavailable', body: 'Your browser does not support geolocation.' })
@@ -180,7 +192,7 @@ export default function App() {
         </div>
       )}
       <div className="bg"><i className="b1" /><i className="b2" /><i className="b3" /><div className="gridfx" /></div>
-      <Boundary fallback={null}><Suspense fallback={null}><Backdrop color={cat.color} aqi={aq?.current?.us_aqi} /></Suspense></Boundary>
+      {fx && <Boundary fallback={null}><Suspense fallback={null}><Backdrop color={cat.color} aqi={aq?.current?.us_aqi} /></Suspense></Boundary>}
       <div className="noise" />
 
       <aside className="dock">

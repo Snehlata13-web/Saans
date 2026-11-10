@@ -142,6 +142,26 @@ Map tiles © Esri, © OpenStreetMap contributors.
 - **CI:** GitHub Actions runs the tests and the build on every push.
 - **Error boundaries:** if WebGL or one widget fails, the rest of the app keeps working, and the 3D orb falls back to a CSS orb.
 
+## ⚡ Performance (smooth on every device)
+
+- **Particles run on the GPU:** all particle motion (smog backdrop, breathing orb) happens in GLSL vertex shaders, so there are no per-frame JavaScript loops.
+- **3D pauses when not needed:** WebGL render loops pause when the canvas is off-screen or the tab is hidden (`IntersectionObserver` + `visibilitychange`).
+- **Pixel ratio cap:** at most 1.5× on desktop and 1× on Lite devices.
+- **Automatic Lite mode** turns on for phones, touch devices, ≤4 CPU cores or ≤4 GB RAM, data-saver and reduced-motion users:
+  - no full-screen WebGL backdrop and no backdrop blur
+  - fewer particles and fewer polygons
+  - no tilt or shimmer animations
+  - the design stays the same
+- **Loading:**
+  - The full-screen backdrop mounts only when the browser is idle.
+  - Every page is code-split, and the 3D, map and chart libraries load only when needed.
+  - The first load is ≈ 90 kB gzip of JS.
+- **Smaller downloads:**
+  - Textures are compressed (earth 715 → 228 kB, topology 378 → 42 kB).
+  - Hashed assets get immutable cache headers.
+- **Cheap input handling:** pointer handlers are throttled to animation frames, and the cursor loop sleeps when idle.
+- **Fewer API calls:** de-duplicated requests plus a memory and localStorage cache.
+
 ## 🧱 Tech stack
 
 React 19 + Vite · Three.js / React-Three-Fiber / Drei · Leaflet · Recharts · Vercel Serverless Functions.
