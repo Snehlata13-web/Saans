@@ -18,6 +18,22 @@ Built for the **Let's Code Diwali Challenge 2026 — Breathe Better**.
 
 ## ✨ Why SAANS is different
 
+### 🧭 Signature feature — Clean Commute (route × time pollution planner)
+Pick a destination and choose **Drive / Cycle / Walk**. SAANS then:
+1. Fetches every alternative road route (OpenStreetMap / OSRM).
+2. Samples the **hourly PM2.5 forecast along each route** for the next 24 h.
+3. Estimates the **PM2.5 you would actually inhale** (concentration × time on each segment × breathing rate × in-car infiltration).
+
+It then tells you the cleanest road **and** the best time to leave. Example from 9 Nov 2026, Delhi → Gurugram by car: *"Leave Wed 2:30 pm via Route A → inhale 37% less PM2.5 than taking the fastest route right now."*
+
+What you get:
+- Routes on the map, coloured segment by segment.
+- A departure-time slider.
+- A dose-by-departure chart.
+- Route cards with the dose for each option.
+
+Most AQI apps only tell you how bad the air is. SAANS also tells you how to breathe less of it.
+
 | | |
 |---|---|
 | 🇮🇳 **India NAQI ⇄ US AQI, everywhere** | One switch changes every page to the scale you choose: dashboard, ticker, 3D globe, map, history, forecast, compare, health, alerts, share card and AI. India defaults to CPCB NAQI, which is the number people see on Indian news and apps. |
@@ -85,7 +101,7 @@ Built for the **Let's Code Diwali Challenge 2026 — Breathe Better**.
 9. **Pollution leaderboard:** 76 cities, worst-first or cleanest-first, filtered by All / India / World.
 10. **Voice assistant:** Web Speech API for speech recognition and speech output.
 11. **Anomaly detection:** robust z-score (rolling median/MAD) on hourly PM2.5, merged into events.
-12. **Multi-API integration:** 7 public data sources (below).
+12. **Multi-API integration:** 8 public data sources (below).
 13. **AI insights:** plain-language summaries generated from the live numbers.
 
 Plus: Diwali Effect, shareable URLs (`?lat=&lon=&name=`), auto-refresh every 10 min, and an offline / stale-cache fallback.
@@ -97,6 +113,7 @@ Plus: Diwali Effect, shareable URLs (`?lat=&lon=&name=`), auto-refresh every 10 
 | [Open-Meteo Air Quality](https://open-meteo.com/en/docs/air-quality-api) (Copernicus CAMS) | current, hourly history (since 2022), 5-day forecast, multi-city | **Model estimate / forecast** | none |
 | [WAQI / aqicn.org](https://aqicn.org/api/) | nearby stations, hotspot, stations on the map | **Ground-station measurement** | optional `WAQI_TOKEN` |
 | [CPCB via data.gov.in](https://data.gov.in/resource/real-time-air-quality-index-various-locations) | official NAQI per station (24 h avg) | **Official measurement** | optional `DATAGOV_API_KEY` |
+| [OSRM routing (routing.openstreetmap.de)](https://routing.openstreetmap.de) | car / bike / foot route alternatives for Clean Commute | — | none |
 | [Open-Meteo Weather](https://open-meteo.com/en/docs) | wind, humidity, boundary layer (insights + ML) | model | none |
 | [Open-Meteo Geocoding](https://open-meteo.com/en/docs/geocoding-api) | place search | — | none |
 | [BigDataCloud reverse geocoding](https://www.bigdatacloud.com/free-api/free-reverse-geocode-to-city-api) | names for "Near me" / map probe | — | none |
@@ -139,9 +156,10 @@ src/lib/
   aqi.js         EPA NowCast + CPCB NAQI engines, categories, active-scale switch
   analytics.js   ML forecast, anomaly detection, daily aggregation, best window
   insights.js    plain-language insights + AI context
+  commute.js     routes × hourly forecast → inhaled-dose model
   alerts.js      threshold & forecast alerts
 src/components/
-  Dashboard  BreathOrb  Backdrop  Globe  World  MapView  History (+ Diwali)
+  Dashboard  BreathOrb  Backdrop  Globe  World  MapView  Commute  History (+ Diwali)
   Forecast  Compare  Health  Assistant  Alerts  ShareCard  CommandPalette
 ```
 

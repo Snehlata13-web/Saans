@@ -11,6 +11,7 @@ const Backdrop = lazy(() => import('./components/Backdrop'))
 
 const World = lazy(() => import('./components/World'))
 const MapView = lazy(() => import('./components/MapView'))
+const Commute = lazy(() => import('./components/Commute'))
 const History = lazy(() => import('./components/History'))
 const Forecast = lazy(() => import('./components/Forecast'))
 const Compare = lazy(() => import('./components/Compare'))
@@ -24,6 +25,7 @@ const ICONS = {
   overview: I(<><path d="M3 12h3l2-6 4 12 2-6h7" /></>),
   world: I(<><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></>),
   map: I(<><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" /><path d="M9 4v14M15 6v14" /></>),
+  commute: I(<><circle cx="6" cy="18" r="2.5" /><circle cx="18" cy="6" r="2.5" /><path d="M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5" /></>),
   history: I(<><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5M12 7v5l3 3" /></>),
   forecast: I(<><path d="M17 18H7a4 4 0 1 1 .9-7.9A6 6 0 0 1 19 12a3 3 0 0 1-2 6z" /><path d="m11 13 2 2 3-4" /></>),
   compare: I(<><path d="M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0L5 7zM19 7l-3 7a3 3 0 0 0 6 0l-3-7z" /></>),
@@ -33,13 +35,14 @@ const ICONS = {
 }
 
 const TABS = [
-  ['overview', '◉', 'Live'], ['world', '🌍', '3D Globe'], ['map', '🗺️', 'Map'], ['history', '📈', 'History'],
+  ['overview', '◉', 'Live'], ['world', '🌍', '3D Globe'], ['map', '🗺️', 'Map'], ['commute', '🧭', 'Commute'], ['history', '📈', 'History'],
   ['forecast', '🔮', 'Forecast'], ['compare', '⚖️', 'Compare'], ['health', '🩺', 'Health'], ['assistant', '🤖', 'AI'], ['alerts', '🔔', 'Alerts'],
 ]
 
 const HEADS = {
   world: ['Planet pulse', 'The world, breathing.', 'Live AQI for 76 cities rendered as glowing pillars on a 3D Earth. Drag to spin, click a pillar to fly there.'],
   map: ['Interactive map', 'Pollution, mapped.', 'A live heatmap of modelled AQI, real monitoring stations and hotspots. Click anywhere on Earth to probe the air.'],
+  commute: ['Clean Commute', 'Breathe less smoke on the way.', 'Pick a destination — SAANS checks every route against the 24-hour pollution forecast and tells you the cleanest road and the best time to leave.'],
   history: ['Time machine', 'How the air has changed.', 'Daily trends, spikes, anomalies and a full impact report for {city} — plus the Diwali firecracker effect.'],
   forecast: ['Look ahead', 'Tomorrow\'s air, today.', 'Copernicus CAMS forecast for {city}, cross-checked by SAANS\' own ML model trained live in your browser.'],
   compare: ['Side by side', 'Who breathes easier?', 'Compare pollutants and 7-day trends across up to five places.'],
@@ -223,6 +226,7 @@ export default function App() {
           <Boundary><Suspense fallback={<Loader text="Loading module…" />}>
             {tab === 'world' && <World world={world} worldErr={worldErr} loc={loc} aq={aq} onPick={pick} />}
             {tab === 'map' && <MapView loc={loc} world={world} onPick={pick} />}
+            {tab === 'commute' && <Commute loc={loc} aq={aq} />}
             {tab === 'health' && <Health aq={aq} />}
             {tab === 'compare' && <Compare loc={loc} />}
             {tab === 'history' && <History loc={loc} />}

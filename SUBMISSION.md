@@ -33,7 +33,8 @@ Air pollution is invisible. Most dashboards show a number and stop there. SAANS 
 3. **CPCB Real-time AQI via data.gov.in** (Open Government Data, optional key): official NAQI for each station.
 4. **Open-Meteo Weather API**: wind, humidity, boundary-layer height (used for insights and as ML features).
 5. **Open-Meteo Geocoding API**: place search.
-6. **BigDataCloud Reverse Geocoding**: names for "Near me" and map probes.
+6. **OSRM routing (routing.openstreetmap.de)**: route alternatives for Clean Commute.
+6b. **BigDataCloud Reverse Geocoding**: names for "Near me" and map probes.
 7. **Google Gemini API** (optional, server-side key; Groq/OpenAI also supported): LLM assistant + one-click AI briefing. Without a key, a built-in engine grounded on the live data answers instead.
 
 ## 6. Screenshots
@@ -83,6 +84,7 @@ See `docs/` in the repo (dashboard, globe, map, history, Diwali effect, forecast
 13. AI insights
 
 ### Extra
+- **🧭 Clean Commute (signature feature):** compares every route against the 24 h PM2.5 forecast and recommends the cleanest road and the best departure time, with an inhaled-dose estimate (e.g. "leave at 2:30 pm via Route A → 37% less PM2.5").
 - 48 h map time-lapse with animated wind flow (shows where smoke is drifting from).
 - Unit tests and CI (GitHub Actions); error boundaries with a WebGL fallback.
 - Diwali Effect analysis.
