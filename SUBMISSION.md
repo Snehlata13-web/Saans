@@ -83,6 +83,8 @@ See `docs/` in the repo (dashboard, globe, map, history, Diwali effect, forecast
 13. AI insights
 
 ### Extra
+- 48 h map time-lapse with animated wind flow (shows where smoke is drifting from).
+- Unit tests and CI (GitHub Actions); error boundaries with a WebGL fallback.
 - Diwali Effect analysis.
 - Global India NAQI ⇄ US AQI switch: every page (globe, map, history, forecast, compare, health, alerts, share card, AI) follows the selected scale.
 - 3D breath orb, 3D globe, 3D smog backdrop.

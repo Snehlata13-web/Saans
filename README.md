@@ -24,6 +24,7 @@ Built for the **Let's Code Diwali Challenge 2026 — Breathe Better**.
 | 📡 **Measured vs. modelled, side by side** | The Copernicus CAMS model runs next to nearby ground stations (WAQI). The app shows the station median and the worst hotspot (e.g. *Anand Vihar*). Every value is tagged **Measured / Model estimate / Forecast / ML**. |
 | 🫁 **3D breathing orb** | A glass sphere breathes in and out every 4 s. Its particle density follows live PM2.5, and the pollutants orbit it as glowing chips. |
 | 🌍 **3D pollution globe** | 76 cities as glowing AQI pillars on a night-lights Earth. Pulsing rings mark hotspots, and you can click a pillar to fly there. |
+| 🎞️ **48-hour pollution time-lapse + wind flow** | Press ▶ on the map to watch the forecast heatmap evolve hour by hour, with animated wind arrows that show where smoke is drifting from, e.g. stubble burning in Punjab → Delhi. |
 | 🪔 **Diwali Effect** | Lines up PM2.5 around every Diwali since 2023 (including 8 Nov 2026) to show the impact of firecrackers. |
 | 🧠 **In-browser ML** | Ridge-regression model with weather features, trained live on 30 days of data. It is back-tested against a persistence baseline, and its error and skill are shown in the app. |
 | ✨ **Gemini AI** | A one-click AI briefing and a voice chat assistant in English, Hindi or Hinglish. It only uses the live numbers and never invents readings. |
@@ -51,6 +52,7 @@ Built for the **Let's Code Diwali Challenge 2026 — Breathe Better**.
   - Nearby monitoring stations and the hotspot.
 - **B. Interactive map**
   - Leaflet map with dark Esri tiles and a blurred heatmap.
+  - A **48 h play/scrub time-lapse** of the forecast with **animated wind-flow arrows**. Each frame is labelled "Current model estimate" or "CAMS forecast".
   - Colour-coded city markers and real WAQI stations in view.
   - **Click anywhere** for full pollutant details.
   - Pulsing hotspots, a hotspot list and a legend for the chosen scale.
@@ -113,6 +115,16 @@ Map tiles © Esri, © OpenStreetMap contributors.
 - **No fabricated values.** If an API fails, SAANS shows the last good response, labelled **"Cached — live fetch failed"** with its timestamp.
 - **Resilience:** timeouts and `429` rate limits are retried with exponential back-off, requests are de-duplicated, and responses are cached in memory and localStorage to stay within free-tier limits.
 
+## 🧪 Quality
+
+- **Unit tests** (`npm test`, Vitest) cover:
+  - EPA breakpoints, NowCast, the 500 cap and the PM2.5 round-trip
+  - CPCB NAQI bands and the ≥3-pollutant rule
+  - Scale switching and the ozone-bias guard
+  - Anomaly detection, and ML convergence vs. a baseline
+- **CI:** GitHub Actions runs the tests and the build on every push.
+- **Error boundaries:** if WebGL or one widget fails, the rest of the app keeps working, and the 3D orb falls back to a CSS orb.
+
 ## 🧱 Tech stack
 
 React 19 + Vite · Three.js / React-Three-Fiber / Drei · Leaflet · Recharts · Vercel Serverless Functions.
@@ -140,6 +152,7 @@ git clone <repo-url> && cd saans
 npm install
 cp .env.example .env      # optional keys (see below)
 npm run dev               # http://localhost:5173 — /api functions run inside the Vite dev server
+npm test                  # unit tests
 ```
 
 **No keys needed.** Without keys the app still shows live model data, public station data and the built-in AI engine. The optional keys unlock more:
