@@ -5,6 +5,7 @@ import { category, setActiveScale } from './lib/aqi'
 import { checkAlerts } from './lib/alerts'
 import Dashboard from './components/Dashboard'
 import CommandPalette from './components/CommandPalette'
+import { Cursor, Ripple } from './components/FX'
 import { Loader, ErrorBox, PageHead, Boundary } from './components/ui'
 
 const Backdrop = lazy(() => import('./components/Backdrop'))
@@ -268,6 +269,8 @@ export default function App() {
         </footer>
       </div>
 
+      <Cursor />
+      <Ripple trigger={tab} color={cat.color} />
       <CommandPalette open={cmd} onClose={() => setCmd(false)} onPick={pick} onLocate={locate} world={world} />
       <div className="toasts">{toasts.map((t) => <div key={t.id} className="toast"><b>{t.title}</b><span>{t.body}</span></div>)}</div>
     </div>

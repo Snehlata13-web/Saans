@@ -1,10 +1,46 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { getStationsInBounds, getCpcb } from '../lib/api'
 import { Card, Tag, AqiChip, CountUp, Ring, Boundary } from './ui'
 import { bands, category, usCategory, naqiCategory, naqiNow, POLLUTANTS, round, fmtTime, fmtHour, haversine, polLabel } from '../lib/aqi'
 import { insights, contextFor } from '../lib/insights'
 
 const BreathOrb = lazy(() => import('./BreathOrb'))
+
+// Press & hold for one breath (4 s). Uses ~0.5 L tidal volume and ~15 m³/day adult inhalation (US EPA Exposure Factors).
+function HoldToBreathe({ pm, onProgress, color }) {
+  const [p, setP] = useState(0)
+  const [done, setDone] = useState(null)
+  const raf = useRef()
+  const start = (e) => {
+    e.preventDefault()
+    setDone(null)
+    const t0 = performance.now()
+    const tick = (t) => {
+      const k = Math.min(1, (t - t0) / 4000)
+      setP(k); onProgress(k)
+      if (k < 1) raf.current = requestAnimationFrame(tick)
+      else { setDone(true); setTimeout(() => { setP(0); onProgress(0) }, 400) }
+    }
+    raf.current = requestAnimationFrame(tick)
+  }
+  const stop = () => { cancelAnimationFrame(raf.current); if (p < 1) { setP(0); onProgress(0) } }
+  const perBreath = pm != null ? pm * 0.0005 : null
+  return (
+    <div className="htb" style={{ '--c': color, '--p': p }}>
+      <button className="htb-btn" onPointerDown={start} onPointerUp={stop} onPointerLeave={stop} aria-label="Hold to take a breath">
+        <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="28" className="htb-track" /><circle cx="32" cy="32" r="28" className="htb-fill" style={{ strokeDashoffset: 176 * (1 - p) }} /></svg>
+        <span>{p > 0 && p < 1 ? 'inhaling…' : 'Hold to breathe'}</span>
+      </button>
+      {done && perBreath != null && (
+        <div className="htb-res">
+          That breath carried <b>≈ {perBreath < 0.1 ? perBreath.toFixed(3) : perBreath.toFixed(2)} µg</b> of PM2.5.
+          <br />A full day here ≈ <b>{Math.round(pm * 15)} µg</b> into your lungs.
+          <small>Estimate: 0.5 L per breath, 15 m³/day (US EPA). Model PM2.5 {Math.round(pm)} µg/m³.</small>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function ScaleMeter({ value }) {
   const B = bands()
@@ -65,6 +101,7 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
   const { lines, s } = insights(aq, wx, loc.name)
   const st = station && !station.error && station.aqi != null ? station : null
   const [ai, setAi] = useState(null)
+  const [breath, setBreath] = useState(0)
   const runAi = async () => {
     setAi({ busy: true })
     try {
@@ -159,12 +196,21 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
         <div className="hero-r">
           <div className="breath-label"><span className="in">inhale</span><span className="out">exhale</span></div>
           <Boundary fallback={<div className="orb-fallback" style={{ '--c': cat.color }} />}><Suspense fallback={<div style={{ height: 560 }} />}>
-            <BreathOrb color={cat.color} pm={c.pm2_5} height={560} orbit={orbit} zoom={7} />
+            <BreathOrb color={cat.color} pm={c.pm2_5} height={560} orbit={orbit} zoom={7} inhale={breath > 0 && breath < 1} />
           </Suspense></Boundary>
+          <HoldToBreathe pm={c.pm2_5} onProgress={setBreath} color={cat.color} />
           <div className="orb-cap">Each glowing speck ≈ live PM2.5 density · {round(c.pm2_5, 1)} µg/m³</div>
         </div>
         <div className="scroll-hint">scroll<i /></div>
       </section>
+
+      <div className="marquee" style={{ '--c': cat.color }}>
+        <div className="mq-in">
+          {Array.from({ length: 2 }).map((_, k) => (
+            <span key={k}>BREATHE <i>✦</i> साँस <i>✦</i> {loc.name.toUpperCase()} <b>{headline ?? '—'}</b> <i>✦</i> {cat.label.toUpperCase()} <i>✦</i> BREATHE BETTER <i>✦</i> PM2.5 <b>{round(c.pm2_5)}</b> µg/m³ <i>✦</i> </span>
+          ))}
+        </div>
+      </div>
 
       <div className="bento">
         <Card className="b-wide" title="Last 24h → next 24h" icon="〰" right={<div className="tags"><Tag kind="history">Modelled</Tag><Tag kind="forecast" /></div>}>

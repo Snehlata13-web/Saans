@@ -38,12 +38,16 @@ function Particles({ count, color }) {
   )
 }
 
-function Breather({ color, pm }) {
+function Breather({ color, pm, inhale }) {
   const g = useRef()
-  useFrame(({ clock }) => {
-    // 4s inhale / 4s exhale
-    const s = 1 + Math.sin((clock.elapsedTime * Math.PI) / 4) * 0.07
-    g.current.scale.setScalar(s)
+  const k = useRef(1)
+  useFrame(({ clock, pointer }) => {
+    // 4s inhale / 4s exhale; holding "breathe" swells the orb; follows the cursor
+    const base = 1 + Math.sin((clock.elapsedTime * Math.PI) / 4) * 0.07
+    k.current += ((inhale ? 1.32 : 1) - k.current) * 0.04
+    g.current.scale.setScalar(base * k.current)
+    g.current.rotation.y += (pointer.x * 0.6 - g.current.rotation.y) * 0.05
+    g.current.rotation.x += (-pointer.y * 0.4 - g.current.rotation.x) * 0.05
   })
   const count = Math.round(Math.min(2600, Math.max(40, (pm || 0) * 14)))
   return (
@@ -90,14 +94,14 @@ function Orbiters({ items }) {
   )
 }
 
-export default function BreathOrb({ color = '#2ee59d', pm = 10, height = 340, orbit, zoom = 5.2 }) {
+export default function BreathOrb({ color = '#2ee59d', pm = 10, height = 340, orbit, zoom = 5.2, inhale = false }) {
   return (
     <div className="orb-box" style={{ height, width: '100%' }}>
       <Canvas camera={{ position: [0, 0, zoom], fov: 45 }} dpr={[1, 2]} gl={{ alpha: true, antialias: true }}>
         <ambientLight intensity={0.6} />
         <pointLight position={[3, 3, 4]} intensity={40} color={color} />
         <pointLight position={[-4, -2, 2]} intensity={20} color="#ff9f1c" />
-        <Breather color={color} pm={pm} />
+        <Breather color={color} pm={pm} inhale={inhale} />
         {orbit && <Orbiters items={orbit} />}
         <Sparkles count={40} scale={6} size={2} speed={0.3} color="#ffd27a" />
       </Canvas>
