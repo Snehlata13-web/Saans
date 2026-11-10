@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { getStationsInBounds, getCpcb } from '../lib/api'
-import { Card, Tag, AqiChip, CountUp, Ring } from './ui'
+import { Card, Tag, AqiChip, CountUp, Ring, Boundary } from './ui'
 import { bands, category, usCategory, naqiCategory, naqiNow, POLLUTANTS, round, fmtTime, fmtHour, haversine, polLabel } from '../lib/aqi'
 import { insights, contextFor } from '../lib/insights'
 
@@ -158,9 +158,9 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
         </div>
         <div className="hero-r">
           <div className="breath-label"><span className="in">inhale</span><span className="out">exhale</span></div>
-          <Suspense fallback={<div style={{ height: 560 }} />}>
-            <BreathOrb color={cat.color} pm={c.pm2_5} height={560} orbit={orbit} zoom={6.4} />
-          </Suspense>
+          <Boundary fallback={<div className="orb-fallback" style={{ '--c': cat.color }} />}><Suspense fallback={<div style={{ height: 560 }} />}>
+            <BreathOrb color={cat.color} pm={c.pm2_5} height={560} orbit={orbit} zoom={7} />
+          </Suspense></Boundary>
           <div className="orb-cap">Each glowing speck ≈ live PM2.5 density · {round(c.pm2_5, 1)} µg/m³</div>
         </div>
         <div className="scroll-hint">scroll<i /></div>

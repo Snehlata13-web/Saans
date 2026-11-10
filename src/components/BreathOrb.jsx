@@ -75,7 +75,7 @@ function Orbiters({ items }) {
       {items.map((it, i) => {
         const a = (i / items.length) * Math.PI * 2
         return (
-          <group key={it.label} position={[Math.cos(a) * 2.35, Math.sin(a * 2) * 0.35, Math.sin(a) * 2.35]}>
+          <group key={it.label} position={[Math.cos(a) * 2.15, Math.sin(a * 2) * 0.35, Math.sin(a) * 2.15]}>
             <mesh>
               <sphereGeometry args={[0.06, 16, 16]} />
               <meshBasicMaterial color={it.color} toneMapped={false} />
@@ -92,7 +92,7 @@ function Orbiters({ items }) {
 
 export default function BreathOrb({ color = '#2ee59d', pm = 10, height = 340, orbit, zoom = 5.2 }) {
   return (
-    <div style={{ height, width: '100%' }}>
+    <div className="orb-box" style={{ height, width: '100%' }}>
       <Canvas camera={{ position: [0, 0, zoom], fov: 45 }} dpr={[1, 2]} gl={{ alpha: true, antialias: true }}>
         <ambientLight intensity={0.6} />
         <pointLight position={[3, 3, 4]} intensity={40} color={color} />

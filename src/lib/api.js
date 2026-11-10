@@ -173,6 +173,25 @@ export async function getWeather(lat, lon, { pastDays = 30, forecastDays = 4 } =
   return { current: d.current, rows: toRows(d.hourly) }
 }
 
+// 48-hour hourly forecast of particles + wind for a grid of points (map time-lapse)
+export async function getGridSeries(points, hours = 48) {
+  const lat = points.map((p) => p.lat.toFixed(2)).join(','), lon = points.map((p) => p.lon.toFixed(2)).join(',')
+  const [a, w] = await Promise.all([
+    getJSON(`${AQ}?${qs({ latitude: lat, longitude: lon, hourly: 'pm2_5,pm10', forecast_hours: hours, timeformat: 'unixtime' })}`, { ttl: 30 * 60e3 }),
+    getJSON(`${WX}?${qs({ latitude: lat, longitude: lon, hourly: 'wind_speed_10m,wind_direction_10m', forecast_hours: hours, timeformat: 'unixtime' })}`, { ttl: 30 * 60e3 }).catch(() => null),
+  ])
+  const A = Array.isArray(a) ? a : [a], W = w ? (Array.isArray(w) ? w : [w]) : []
+  const times = (A[0]?.hourly?.time || []).map((t) => t * 1000)
+  return {
+    times,
+    cells: points.map((p, i) => ({
+      ...p,
+      aqi: (A[i]?.hourly?.pm2_5 || []).map((v, h) => epaFromCurrent({ pm2_5: v, pm10: A[i].hourly.pm10?.[h] }).us_aqi),
+      ws: W[i]?.hourly?.wind_speed_10m || [], wd: W[i]?.hourly?.wind_direction_10m || [],
+    })),
+  }
+}
+
 export async function getCpcb(lat, lon, radius = 30) {
   return getJSON(`/api/cpcb?${qs({ lat: lat.toFixed(3), lon: lon.toFixed(3), radius })}`, { ttl: 10 * 60e3, retries: 0, persist: false, timeout: 30000 })
 }

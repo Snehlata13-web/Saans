@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup, Rectangle, Pane, useMap, 
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { category, usCategory, bands, scaleName, hiThreshold, round, fmtTime } from '../lib/aqi'
-import { getMulti, getStationsInBounds, reverseGeocode } from '../lib/api'
+import { getMulti, getStationsInBounds, reverseGeocode, getGridSeries } from '../lib/api'
 import { Tag } from './ui'
 
 function Events({ onMove, onClick }) {
@@ -22,10 +22,23 @@ function FlyTo({ loc }) {
   return null
 }
 
+const arrow = (deg, ws) => {
+  const len = Math.min(34, 12 + ws * 1.1)
+  return L.divIcon({ className: '', html: `<div class="wind" style="--r:${(deg + 180) % 360}deg;--l:${len}px;--o:${Math.min(1, 0.35 + ws / 25)}"><i></i></div>`, iconSize: [40, 40], iconAnchor: [20, 20] })
+}
+
 const pulse = (color) => L.divIcon({ className: '', html: `<div class="pulse" style="--c:${color}"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] })
 
 export default function MapView({ loc, world, onPick }) {
-  const [grid, setGrid] = useState([])
+  const [series, setSeries] = useState(null)
+  const [hi, setHi] = useState(0)
+  const [play, setPlay] = useState(false)
+  const [wind, setWind] = useState(true)
+  useEffect(() => {
+    if (!play || !series) return
+    const i = setInterval(() => setHi((h) => (h + 1) % series.times.length), 450)
+    return () => clearInterval(i)
+  }, [play, series])
   const [stations, setStations] = useState([])
   const [heat, setHeat] = useState(true)
   const [showSt, setShowSt] = useState(true)
@@ -42,7 +55,7 @@ export default function MapView({ loc, world, onPick }) {
     }
     try {
       setMsg('')
-      if (heat) setGrid(await getMulti(pts, ['us_aqi', 'pm2_5']))
+      if (heat || wind) setSeries(await getGridSeries(pts))
     } catch (err) { setMsg('Heatmap: ' + err.message) }
     if (showSt) {
       try {
@@ -68,6 +81,7 @@ export default function MapView({ loc, world, onPick }) {
     <div className="map-shell">
       <div className="map-tools">
         <label><input type="checkbox" checked={heat} onChange={(e) => setHeat(e.target.checked)} /> Heatmap <Tag kind="model" /></label>
+        <label><input type="checkbox" checked={wind} onChange={(e) => setWind(e.target.checked)} /> Wind flow</label>
         <label><input type="checkbox" checked={showSt} onChange={(e) => setShowSt(e.target.checked)} /> Stations <Tag kind="measured" /></label>
         <span className="muted xs">Click anywhere on the map to probe air quality · pulsing = hotspots</span>
         {msg && <span className="warn xs">{msg}</span>}
@@ -78,11 +92,14 @@ export default function MapView({ loc, world, onPick }) {
         <Events onMove={onMove} onClick={onClick} />
         <FlyTo loc={loc} />
         <Pane name="heat" style={{ zIndex: 350, filter: 'blur(32px) saturate(1.3)', opacity: 0.8 }}>
-          {heat && grid.map((g, i) => g.us_aqi != null && (
+          {heat && series?.cells.map((g, i) => g.aqi[hi] != null && (
             <Rectangle key={i} bounds={[[g.lat - g.dLat / 2, g.lon - g.dLon / 2], [g.lat + g.dLat / 2, g.lon + g.dLon / 2]]}
-              pathOptions={{ stroke: false, fillColor: category(g.us_aqi).color, fillOpacity: 0.55 }} interactive={false} />
+              pathOptions={{ stroke: false, fillColor: category(g.aqi[hi]).color, fillOpacity: 0.55 }} interactive={false} />
           ))}
         </Pane>
+        {wind && series?.cells.map((g, i) => g.wd[hi] != null && (
+          <Marker key={'w' + i} position={[g.lat, g.lon]} icon={arrow(g.wd[hi], g.ws[hi] || 0)} interactive={false} />
+        ))}
         {showSt && stations.map((s) => (
           <CircleMarker key={s.uid} center={[s.lat, s.lon]} radius={5} pathOptions={{ color: '#fff', weight: 1, fillColor: usCategory(s.aqi).color, fillOpacity: 0.95 }}>
             <Popup><b>{s.name}</b><br />Measured US AQI (WAQI): <b style={{ color: usCategory(s.aqi).color }}>{s.aqi > 500 ? '500+' : s.aqi}</b><br /><small>{s.time && fmtTime(s.time)} · WAQI</small></Popup>
@@ -114,6 +131,20 @@ export default function MapView({ loc, world, onPick }) {
           </Popup>
         )}
       </MapContainer>
+      {series?.times.length > 1 && (
+        <div className="timeline">
+          <button className="tl-play" onClick={() => setPlay(!play)} aria-label={play ? 'Pause' : 'Play'}>{play ? '❚❚' : '▶'}</button>
+          <div className="tl-mid">
+            <div className="tl-top">
+              <b>{hi === 0 ? 'Now' : `+${hi}h`}</b>
+              <span>{new Date(series.times[hi]).toLocaleString('en-IN', { weekday: 'short', hour: 'numeric', hour12: true })}</span>
+              {hi === 0 ? <Tag kind="model">Current model estimate</Tag> : <Tag kind="forecast">CAMS forecast</Tag>}
+              <span className="muted xs">48h pollution + wind time-lapse · {scaleName()}</span>
+            </div>
+            <input type="range" min="0" max={series.times.length - 1} value={hi} onChange={(e) => { setPlay(false); setHi(Number(e.target.value)) }} className="range" />
+          </div>
+        </div>
+      )}
       <div className="legend">
         <b>{scaleName()}</b>{bands().map((c, i, B) => <span key={c.key}><i style={{ background: c.color }} />{(i ? B[i - 1].max + 1 : 0)}{c.max < 999 ? '–' + c.max : '+'} {c.short || c.label}</span>)}<span className="muted">· white-ring dots = WAQI stations (US AQI)</span>
       </div>

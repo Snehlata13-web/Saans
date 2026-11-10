@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
-import { Card, Tag, AqiChip, Loader, ErrorBox } from './ui'
+import { Card, Tag, AqiChip, Loader, ErrorBox, Boundary } from './ui'
 import { getMulti, reverseGeocode } from '../lib/api'
 import { category, round, fmtTime, scaleName } from '../lib/aqi'
 
@@ -16,9 +16,9 @@ export default function World({ world, worldErr, loc, aq, onPick }) {
     <div className="grid world">
       <Card className="span2 globe-card" title="Live 3D pollution globe" icon="🌍" right={<Tag kind="model">Pillar height = AQI · rings = hotspots</Tag>}>
         <ErrorBox error={worldErr} />
-        <Suspense fallback={<Loader text="Spinning up the globe…" />}>
+        <Boundary><Suspense fallback={<Loader text="Spinning up the globe…" />}>
           <Globe points={world} height={560} selected={sel} focus={loc} onSelect={(p) => setSel(p)} autoRotate={!sel} />
-        </Suspense>
+        </Suspense></Boundary>
         {sel && (
           <div className="globe-sel" style={{ '--c': category(sel.us_aqi).color }}>
             <b>{sel.name}</b>, {sel.country} · AQI <AqiChip v={sel.us_aqi} /> {category(sel.us_aqi).label} · PM2.5 {sel.pm2_5}

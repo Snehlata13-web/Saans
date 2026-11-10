@@ -1,5 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
+import { Component, useEffect, useRef, useState } from 'react'
 import { category } from '../lib/aqi'
+
+// Keeps one failing widget (e.g. WebGL unavailable) from blanking the whole app
+export class Boundary extends Component {
+  constructor(p) { super(p); this.state = { err: null } }
+  static getDerivedStateFromError(err) { return { err } }
+  render() {
+    if (!this.state.err) return this.props.children
+    return this.props.fallback ?? (
+      <div className="errbox">⚠️ This section couldn't load on this device ({String(this.state.err.message || this.state.err).slice(0, 80)}).
+        <button className="btn sm" onClick={() => this.setState({ err: null })}>Retry</button></div>
+    )
+  }
+}
 
 export function CountUp({ value, dur = 1400, decimals = 0 }) {
   const [v, setV] = useState(0)

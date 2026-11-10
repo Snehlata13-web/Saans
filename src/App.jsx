@@ -5,7 +5,7 @@ import { category, setActiveScale } from './lib/aqi'
 import { checkAlerts } from './lib/alerts'
 import Dashboard from './components/Dashboard'
 import CommandPalette from './components/CommandPalette'
-import { Loader, ErrorBox, PageHead } from './components/ui'
+import { Loader, ErrorBox, PageHead, Boundary } from './components/ui'
 
 const Backdrop = lazy(() => import('./components/Backdrop'))
 
@@ -176,7 +176,7 @@ export default function App() {
         </div>
       )}
       <div className="bg"><i className="b1" /><i className="b2" /><i className="b3" /><div className="gridfx" /></div>
-      <Suspense fallback={null}><Backdrop color={cat.color} aqi={aq?.current?.us_aqi} /></Suspense>
+      <Boundary fallback={null}><Suspense fallback={null}><Backdrop color={cat.color} aqi={aq?.current?.us_aqi} /></Suspense></Boundary>
       <div className="noise" />
 
       <aside className="dock">
@@ -220,7 +220,7 @@ export default function App() {
           {head && <PageHead kicker={head[0]} title={head[1]} sub={head[2].replace('{city}', loc.name)} />}
           {loading && !aq && <Loader />}
           <ErrorBox error={err} onRetry={() => setRefreshKey((k) => k + 1)} />
-          <Suspense fallback={<Loader text="Loading module…" />}>
+          <Boundary><Suspense fallback={<Loader text="Loading module…" />}>
             {tab === 'world' && <World world={world} worldErr={worldErr} loc={loc} aq={aq} onPick={pick} />}
             {tab === 'map' && <MapView loc={loc} world={world} onPick={pick} />}
             {tab === 'health' && <Health aq={aq} />}
@@ -233,7 +233,7 @@ export default function App() {
               {tab === 'assistant' && <Assistant loc={loc} aq={aq} wx={wx} station={station} />}
               {share && <ShareCard loc={loc} aq={aq} onClose={() => setShare(false)} />}
             </>}
-          </Suspense>
+          </Suspense></Boundary>
         </main>
 
         <footer className="foot">
