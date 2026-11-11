@@ -791,3 +791,14 @@ html.lite .pol:hover { transform: none; }
 
 .card h3.sub-h { margin: 16px 0 8px; font-size: .9rem; color: #cdd5f3; font-family: "Space Grotesk"; font-weight: 600; }
 .three h3.sub-h, .pol-guide h3.sub-h { margin-top: 0; }
+
+.acc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.acc-k { padding: 14px 16px; border-radius: 16px; background: rgba(255,255,255,.04); border: 1px solid var(--line); display: grid; gap: 4px; }
+.acc-k span { font-size: .74rem; color: var(--mut); } .acc-k b { font-family: var(--disp); font-size: 1.8rem; }
+.acc-bar { grid-column: 1 / -1; position: relative; height: 46px; margin: 18px 0 4px; border-radius: 12px; background: linear-gradient(90deg, rgba(46,229,157,.15), rgba(255,212,59,.15), rgba(255,77,109,.15), rgba(181,108,255,.15)); }
+.acc-range { position: absolute; top: 18px; height: 10px; border-radius: 9px; background: rgba(255,255,255,.12); }
+.acc-st { position: absolute; top: 17px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; border: 2px solid #0a0b14; box-shadow: 0 0 8px currentColor; }
+.acc-model { position: absolute; top: 4px; width: 3px; height: 38px; margin-left: -1.5px; background: #fff; border-radius: 3px; box-shadow: 0 0 12px #fff; }
+.acc-model b { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: .62rem; color: #fff; }
+.acc-note { grid-column: 1 / -1; }
+@media (max-width: 860px) { .acc-grid { grid-template-columns: 1fr; } }

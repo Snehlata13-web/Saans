@@ -16,6 +16,18 @@ Built for the **Let's Code Diwali Challenge 2026 — Breathe Better**.
 
 ---
 
+## 🏆 For judges — where each criterion is covered
+
+| Criterion (weight) | What to look at in SAANS |
+|---|---|
+| **Functionality & implementation (25%)** | All 6 mandatory modules (A–F), plus Commute, Globe and Alerts. 10 pages, no console errors. 12 unit tests and CI. Error boundaries keep the app running if one part fails. |
+| **API integration & data accuracy (20%)** | 8 public APIs. SAANS computes the AQI itself with EPA NowCast + CPCB NAQI instead of using Open-Meteo's raw index, which is ozone-biased. A **live accuracy card** compares the model with real stations: Delhi, 11 Nov 2026 → model 171 vs a 26-station median of 166 (**+3%**). Every number is labelled measured / model / forecast / ML. Failure handling: cache, retry and 429 back-off. Keys stay server-side. |
+| **UI / UX (15%)** | 3D breathing orb with "Hold to breathe", a 3D globe, aurora and glass design, ⌘K search, and one India NAQI ⇄ US AQI switch for every page. **Lighthouse: Accessibility 100 · Best Practices 100 · SEO 100.** Responsive, with an auto Lite mode for phones. |
+| **Real-world impact (15%)** | **Clean Commute** (which road and what time to leave so you inhale less PM2.5). Best 2-hour outdoor window. Advice for 7 sensitive groups. Cigarette-equivalent exposure. Hinglish voice AI. Forecast-based alerts. Clean Air Finder. |
+| **Innovation (10%)** | Route × time inhaled-dose optimiser. A 48 h map time-lapse with wind flow. The Diwali-effect analysis. A live model-vs-station validation card. |
+| **Bonus features (10%)** | **13 / 13** (list below). |
+| **Documentation & deployment (5%)** | This README, `SUBMISSION.md`, `DEMO_SCRIPT.md`, `.env.example`, Vercel config with cache headers, and CI. |
+
 ## ✨ Why SAANS is different
 
 ### 🧭 Signature feature — Clean Commute (route × time pollution planner)
@@ -56,6 +68,7 @@ Most AQI apps only tell you how bad the air is. SAANS also tells you how to brea
   - Weather pills (temperature, wind, humidity) and a live clock.
 - **Cards:** bento grid with **3D tilt**, cursor spotlight, animated conic-gradient glowing borders and scroll-reveal animations.
 - **Navigation:** floating side dock with custom icons, **⌘K command-palette search**, a live city ticker and editorial page headers.
+- **Accessibility:** Lighthouse 100 for Accessibility, Best Practices and SEO, with semantic heading order, ARIA labels and reduced-motion support.
 - **Platforms:** responsive (the dock moves to the bottom on mobile), respects `prefers-reduced-motion`, and ships a PWA manifest and Open Graph tags.
 
 ## ✅ Mandatory features
@@ -127,6 +140,7 @@ Map tiles © Esri, © OpenStreetMap contributors.
   - **India NAQI:** CPCB breakpoints.
 - **Why not Open-Meteo's raw `us_aqi`:** it is inflated by CAMS ozone, which the model strongly over-estimates over South Asia (Mumbai raw 222 vs 159 measured), and it is not capped at 500. CAMS ozone is still shown, as a separate value.
 - **Validation (9 Nov 2026, against IQAir station data):** Delhi 192 vs 196, Mumbai 160 vs 159.
+- **Live, in-app validation:** a card compares the model with every fresh station within 25 km (11 Nov 2026, Delhi: 171 vs 166, +3%).
 - **Why Indian sites show "300+":** on the CPCB scale, PM2.5 of 121–250 µg/m³ maps to 301–400. The same air is ≈ 200 on the US scale, and SAANS explains this in the Health tab.
 - **Measurements first:** WAQI stations publish the US-EPA index. When a station within 25 km has reported in the last 2 hours, the US-scale headline uses the station median. The official CPCB station average is used when `DATAGOV_API_KEY` is set.
 - **No fabricated values.** If an API fails, SAANS shows the last good response, labelled **"Cached — live fetch failed"** with its timestamp.

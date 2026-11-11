@@ -283,6 +283,28 @@ export default function Dashboard({ loc, aq, wx, station, onShare, go, scale = '
           <p className="muted xs">{useCp ? 'Official CPCB NAQI (24-h averages) via data.gov.in Open Government Data. ' : 'Station values are WAQI\'s US-EPA index (hourly). '}Data: World Air Quality Index Project (aqicn.org) · CPCB / state boards.</p>
         </Card>
 
+        <Card className="b-full acc" title="Live accuracy check — model vs ground stations" icon="🎯" right={<div className="tags"><Tag kind="model">CAMS model</Tag><Tag kind="measured">WAQI stations</Tag></div>}>
+          {net?.length ? (() => {
+            const vals = net.map((x) => x.aqi)
+            const lo = vals[0], hi2 = vals[vals.length - 1]
+            const bias = c.epa_aqi != null && med ? Math.round(((c.epa_aqi - med) / med) * 100) : null
+            const W = 100, pos = (v) => Math.min(100, (v / Math.max(hi2, c.epa_aqi || 0, 1)) * W)
+            return (
+              <div className="acc-grid">
+                <div className="acc-k"><span>Model estimate (US AQI)</span><b>{c.epa_aqi ?? '—'}</b></div>
+                <div className="acc-k"><span>Stations median · {net.length} within 25 km</span><b>{med}</b></div>
+                <div className="acc-k"><span>Model bias vs measured</span><b className={Math.abs(bias) <= 15 ? 'down' : 'up'}>{bias > 0 ? '+' : ''}{bias}%</b></div>
+                <div className="acc-bar">
+                  <div className="acc-range" style={{ left: pos(lo) + '%', width: Math.max(1, pos(hi2) - pos(lo)) + '%' }} />
+                  {net.map((x) => <i key={x.uid} className="acc-st" style={{ left: pos(x.aqi) + '%', background: usCategory(x.aqi).color }} title={`${x.name}: ${x.aqi}`} />)}
+                  <i className="acc-model" style={{ left: pos(c.epa_aqi || 0) + '%' }}><b>model</b></i>
+                </div>
+                <p className="xs muted acc-note">Each dot is a real monitoring station (hourly, last 3 h). Station spread {lo}–{hi2} shows how much air varies street-to-street; a gridded model can't resolve single hotspots. {Math.abs(bias) <= 15 ? 'The model agrees with measurements within ±15% here.' : 'The model differs by more than 15% here — trust the station readings for local decisions.'}</p>
+              </div>
+            )
+          })() : <p className="muted sm">No fresh ground stations within 25 km to validate against — showing the model estimate only.</p>}
+        </Card>
+
         <Card className="b-full src" right={null}>
           <div className="src-row">
             <span>🕒 Updated <b>{fmtTime(c.t, aq.tz)}</b> ({aq.tz})</span>

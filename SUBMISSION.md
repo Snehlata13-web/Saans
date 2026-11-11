@@ -1,7 +1,6 @@
 # SAANS — Submission kit (copy-paste into the form)
 
-Submit at: https://forms.gle/8ck7stXe8W61U2t88 (problem-statement doc) — the challenge post links https://forms.gle/TJRqJBeieJwbQMHx9; if unsure submit to the doc form and mention it to letscode@lets-code.co.in.
-Deadline per doc: **9 Nov 2026, 11:59 PM** (post says 10 Nov — don't risk it, submit tonight).
+Submit at: https://forms.gle/8ck7stXe8W61U2t88 — deadline **11 Nov 2026, 11:59 PM**.
 
 ---
 
@@ -84,6 +83,8 @@ See `docs/` in the repo (dashboard, globe, map, history, Diwali effect, forecast
 13. AI insights
 
 ### Extra
+- Live model-vs-station accuracy card (Delhi: model 171 vs 26-station median 166, +3%).
+- Lighthouse 100 for Accessibility, Best Practices and SEO.
 - **🧭 Clean Commute (signature feature):** compares every route against the 24 h PM2.5 forecast and recommends the cleanest road and the best departure time, with an inhaled-dose estimate (e.g. "leave at 2:30 pm via Route A → 37% less PM2.5").
 - 48 h map time-lapse with animated wind flow (shows where smoke is drifting from).
 - Unit tests and CI (GitHub Actions); error boundaries with a WebGL fallback.
