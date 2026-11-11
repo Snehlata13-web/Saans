@@ -37,9 +37,9 @@ export default function Health({ aq }) {
           <h2 style={{ color: c.color }}>{c.emoji} {c.label}</h2>
           <p>{c.meaning}</p>
           <div className="three">
-            <div><h4>👥 Everyone</h4><p>{c.general}</p></div>
-            <div><h4>⚠️ Sensitive groups</h4><p>{c.sensitive}</p></div>
-            <div><h4>🏃 Outdoor activity</h4><p>{c.activity}</p></div>
+            <div><h3 className="sub-h">👥 Everyone</h3><p>{c.general}</p></div>
+            <div><h3 className="sub-h">⚠️ Sensitive groups</h3><p>{c.sensitive}</p></div>
+            <div><h3 className="sub-h">🏃 Outdoor activity</h3><p>{c.activity}</p></div>
           </div>
         </div>
       </Card>

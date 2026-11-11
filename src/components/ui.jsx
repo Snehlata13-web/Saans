@@ -70,7 +70,7 @@ export function Card({ title, icon, right, children, className = '', style }) {
       <div className="spot" />
       {(title || right) && (
         <header className="card-h">
-          <h3>{icon && <span className="ic">{icon}</span>}{title}</h3>
+          <h2 className="card-t">{icon && <span className="ic" aria-hidden="true">{icon}</span>}{title}</h2>
           {right}
         </header>
       )}

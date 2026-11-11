@@ -254,14 +254,14 @@ export default function App() {
         </main>
 
         <footer className="foot">
-          <div className="foot-mega">BREATHE<br /><span>BETTER.</span></div>
+          <div className="foot-mega" aria-hidden="true" />
           <div className="foot-cols">
             <div>
-              <h4>SAANS 🪔</h4>
+              <h2 className="foot-h">SAANS 🪔</h2>
               <p>Real-time air quality intelligence that turns raw atmospheric data into decisions you can act on — built for the Let's Code Diwali Challenge 2026.</p>
             </div>
             <div>
-              <h4>Data sources</h4>
+              <h2 className="foot-h">Data sources</h2>
               <a href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noreferrer">Open-Meteo Air Quality · Copernicus CAMS</a>
               <a href="https://aqicn.org/api/" target="_blank" rel="noreferrer">WAQI · World Air Quality Index</a>
               <a href="https://open-meteo.com/en/docs" target="_blank" rel="noreferrer">Open-Meteo Weather & Geocoding</a>
@@ -269,11 +269,11 @@ export default function App() {
               <a href="https://www.esri.com" target="_blank" rel="noreferrer">Map tiles © Esri · OpenStreetMap</a>
             </div>
             <div>
-              <h4>Explore</h4>
+              <h2 className="foot-h">Explore</h2>
               {TABS.map(([k, , l]) => <button key={k} onClick={() => go(k)}>{l}</button>)}
             </div>
             <div>
-              <h4>Honest data</h4>
+              <h2 className="foot-h">Honest data</h2>
               <p>Measurements, model estimates, forecasts and ML predictions are always labelled. Nothing is fabricated. Health guidance is general information, not medical advice.</p>
             </div>
           </div>

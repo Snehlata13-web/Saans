@@ -87,7 +87,7 @@ export default function Forecast({ loc, aq, wx }) {
               </div>
             </div>
             <div>
-              <h4>Feature influence (|weight|)</h4>
+              <h3 className="sub-h">Feature influence (|weight|)</h3>
               {ml.importance.slice(0, 7).map((f) => (
                 <div key={f.f} className="fi"><span>{f.f}</span><div className="bar"><i style={{ width: Math.min(100, Math.abs(f.w) * 120) + '%', background: f.w > 0 ? '#ff7a8a' : '#2ee59d' }} /></div><small>{f.w > 0 ? '↑' : '↓'}</small></div>
               ))}

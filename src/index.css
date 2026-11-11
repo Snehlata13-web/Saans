@@ -782,3 +782,12 @@ html.lite .card:hover { transform: none; }
 html.lite .tilt { transform: none !important; }
 html.lite .bento > *, html.lite .grid > .card { animation: none !important; }
 html.lite .pol:hover { transform: none; }
+
+.card-h h2.card-t { font-family: 'Space Grotesk'; font-weight: 600; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; margin: 0; letter-spacing: .01em; }
+
+.foot-mega::before { content: 'BREATHE'; display: block; color: rgba(255,255,255,.06); }
+.foot-mega::after { content: 'BETTER.'; display: block; background: linear-gradient(90deg, #ffd27a, #ff7a3d, #ff4d6d, #b56cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.foot-cols .foot-h { font-family: var(--mono); font-size: .72rem; letter-spacing: .25em; text-transform: uppercase; color: #ffc46b; margin: 0 0 14px; font-weight: 600; }
+
+.card h3.sub-h { margin: 16px 0 8px; font-size: .9rem; color: #cdd5f3; font-family: "Space Grotesk"; font-weight: 600; }
+.three h3.sub-h, .pol-guide h3.sub-h { margin-top: 0; }

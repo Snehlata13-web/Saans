@@ -85,7 +85,7 @@ export default function History({ loc }) {
             <div><span>Days &gt; WHO PM2.5</span><b>{overWHO}/{days.length}</b></div>
             <div><span>Spikes / anomalies</span><b>{spikes.length} / {anomalies.events.length}</b></div>
           </div>
-          <h4>Daily {scaleName()} (avg & peak hour) with day-over-day % change</h4>
+          <h3 className="sub-h">Daily {scaleName()} (avg & peak hour) with day-over-day % change</h3>
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart data={chartDays}>
               <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ff4d6d" stopOpacity={0.7} /><stop offset="1" stopColor="#5ec8ff" stopOpacity={0.05} /></linearGradient></defs>
@@ -104,7 +104,7 @@ export default function History({ loc }) {
               <ReferenceLine y={hiThreshold()} stroke="#ff922b55" strokeDasharray="2 4" />
             </ComposedChart>
           </ResponsiveContainer>
-          <h4>PM2.5 vs PM10 (daily mean, µg/m³)</h4>
+          <h3 className="sub-h">PM2.5 vs PM10 (daily mean, µg/m³)</h3>
           <ResponsiveContainer width="100%" height={240}>
             <ComposedChart data={days}>
               <CartesianGrid stroke="rgba(255,255,255,.06)" />
