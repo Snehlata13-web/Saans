@@ -4,7 +4,7 @@
 
 Built for the **Let's Code Diwali Challenge 2026 — Breathe Better**.
 
-**🔗 Live demo:** `<your-vercel-url>`  **🎬 Demo video:** `<your-video-link>`  **📦 Repo:** `<your-github-url>`
+
 
 ![SAANS — live dashboard](docs/overview.png)
 
@@ -125,7 +125,7 @@ Plus: Diwali Effect, shareable URLs (`?lat=&lon=&name=`), auto-refresh every 10 
 |---|---|---|---|
 | [Open-Meteo Air Quality](https://open-meteo.com/en/docs/air-quality-api) (Copernicus CAMS) | current, hourly history (since 2022), 5-day forecast, multi-city | **Model estimate / forecast** | none |
 | [WAQI / aqicn.org](https://aqicn.org/api/) | nearby stations, hotspot, stations on the map | **Ground-station measurement** | optional `WAQI_TOKEN` |
-| [CPCB via data.gov.in](https://data.gov.in/resource/real-time-air-quality-index-various-locations) | official NAQI per station (24 h avg) | **Official measurement** | optional `DATAGOV_API_KEY` |
+
 | [OSRM routing (routing.openstreetmap.de)](https://routing.openstreetmap.de) | car / bike / foot route alternatives for Clean Commute | — | none |
 | [Open-Meteo Weather](https://open-meteo.com/en/docs) | wind, humidity, boundary layer (insights + ML) | model | none |
 | [Open-Meteo Geocoding](https://open-meteo.com/en/docs/geocoding-api) | place search | — | none |
